@@ -1,0 +1,31 @@
+[
+  {
+    "config" : {
+      "data_size" : 32
+    }
+  },
+  {
+    "name" : "Test_Register",
+    "description" : "This is a test register",
+    "bits" : 32
+  },
+  {
+    "name" : "Scratch_Register",
+    "description" : "This is a scratch register",
+    "reg_type" : "rw",
+    "bits" : {
+      "num_bits" : 32,
+      "default_value" : 0
+    }
+  },
+  {
+    "name" : "Register_with_Fields",
+    "description" : "This register has fields",
+    "reg_type" : "custom",
+    "addr_offset" : 64,
+    "bits" : [
+      {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff"},
+      {"field_name" : "reg4", "num_bits" : 4}
+    ]
+  }
+]

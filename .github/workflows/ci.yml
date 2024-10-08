@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main  # Run the tests on push to main branch
+  pull_request:
+    branches:
+      - main  # Run the tests on PRs to main branch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest  # This specifies the runner environment
+
+    steps:
+    # Step 1: Check out the repository
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    # Step 2: Build Docker image
+    - name: Build Docker image
+      run: docker build -t ghdl-test .
+
+    # Step 3: Run tests inside Docker container
+    - name: Run tests
+      run: docker run ghdl-test
