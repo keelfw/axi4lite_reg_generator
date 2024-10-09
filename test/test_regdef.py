@@ -80,38 +80,37 @@ def test_basic_vhd():
 
     os.remove(test_file)
 
+
 def test_duplicate_detection():
     json_file = os.path.join(test_dir, 'test_json.json')
     with open(json_file, 'r') as f:
         json_string = f.read()
     cfg = json.loads(json_string)
-    cfg.append(dict(
-        name = 'dup_addr',
-        addr_offset = 4,
-        bits = 32
-    ))
-    
+    cfg.append(dict(name='dup_addr', addr_offset=4, bits=32))
+
     with pytest.raises(ValueError) as e_info:
         axi4lite_reg_generator.RegDef(json.dumps(cfg))
-    
+
     assert e_info.type == ValueError
-    assert str(e_info.value) == r'Specifying fixed address offset less than running next addr_offset not allowed'
+    assert (
+        str(e_info.value)
+        == r'Specifying fixed address offset less than running next addr_offset not allowed'
+    )
 
     json_file = os.path.join(test_dir, 'test_json.json')
     with open(json_file, 'r') as f:
         json_string = f.read()
     cfg = json.loads(json_string)
-    cfg.append(dict(
-        name = 'dup_addr',
-        addr_offset = 64,
-        bits = 32
-    ))
+    cfg.append(dict(name='dup_addr', addr_offset=64, bits=32))
 
     with pytest.raises(ValueError) as e_info:
         axi4lite_reg_generator.RegDef(json.dumps(cfg))
-    
+
     assert e_info.type == ValueError
-    assert str(e_info.value) == r'Specifying fixed address offset less than running next addr_offset not allowed'
+    assert (
+        str(e_info.value)
+        == r'Specifying fixed address offset less than running next addr_offset not allowed'
+    )
 
 
 def test_rtlsim():
