@@ -23,6 +23,7 @@ class RegDef:
 
         _calculate_address(self._cfg, self._addr_incr)
         _find_duplicate_addresses(self._cfg)
+        self._check_regs_too_large()
 
     def __str__(self):
         return str(self._cfg)
@@ -66,6 +67,15 @@ class RegDef:
 
         _tmp = dict(entity_name='reg_file', data_size=32, strobe_size=4, regs=self._cfg)
         return template.render(_tmp)
+
+    def _check_regs_too_large(self):
+        reg_size = self._reg_cfg['data_size']
+        for reg in self._cfg:
+            num_bits = filters.count_bits(reg['bits'])
+            if num_bits > reg_size:
+                raise ValueError(
+                    f'Register contains too many bits (name: {reg["name"]}, bits: {num_bits} > {reg_size})'
+                )
 
 
 def _calculate_address(config: list, address_incr: int = 1):

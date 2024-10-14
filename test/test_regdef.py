@@ -91,7 +91,7 @@ def test_duplicate_detection():
     with pytest.raises(ValueError) as e_info:
         axi4lite_reg_generator.RegDef(json.dumps(cfg))
 
-    assert e_info.type == ValueError
+    assert e_info.type is ValueError
     assert (
         str(e_info.value)
         == r'Specifying fixed address offset less than running next addr_offset not allowed'
@@ -106,11 +106,42 @@ def test_duplicate_detection():
     with pytest.raises(ValueError) as e_info:
         axi4lite_reg_generator.RegDef(json.dumps(cfg))
 
-    assert e_info.type == ValueError
+    assert e_info.type is ValueError
     assert (
         str(e_info.value)
         == r'Specifying fixed address offset less than running next addr_offset not allowed'
     )
+
+
+def test_address_too_large():
+    json_file = os.path.join(test_dir, 'test_json.json')
+
+    too_long_regs = [
+        dict(name='too_long0', bits=33),
+        dict(name='too_long1', bits=dict(num_bits=33, default_value=0)),
+        dict(
+            name='too_long2',
+            bits=[
+                dict(field_name='field0', num_bits=16),
+                dict(field_name='field1', num_bits=17, default_value=0),
+            ],
+        ),
+    ]
+
+    for too_long_reg in too_long_regs:
+        with open(json_file, 'r') as f:
+            json_string = f.read()
+        cfg = json.loads(json_string)
+        cfg.append(too_long_reg)
+
+        with pytest.raises(ValueError) as e_info:
+            axi4lite_reg_generator.RegDef(json.dumps(cfg))
+
+        assert e_info.type is ValueError
+        assert (
+            str(e_info.value)
+            == f'Register contains too many bits (name: {too_long_reg["name"]}, bits: 33 > 32)'
+        )
 
 
 def test_rtlsim():
