@@ -22,7 +22,8 @@ class RegDef:
         self._addr_incr = int(self._reg_cfg['data_size'] / 8)
 
         _calculate_address(self._cfg, self._addr_incr)
-        # _apply_default_reg_value(self._cfg)
+        _find_duplicate_addresses(self._cfg)
+        self._check_regs_too_large()
 
     def __str__(self):
         return str(self._cfg)
@@ -67,31 +68,14 @@ class RegDef:
         _tmp = dict(entity_name='reg_file', data_size=32, strobe_size=4, regs=self._cfg)
         return template.render(_tmp)
 
-
-def _apply_defaults(instance, schema):
-    """Recursively applies default values from the schema to the instance."""
-    if 'default' in schema:
-        instance = schema['default']
-
-    if schema.get('type') == 'object':
-        for key, subschema in schema.get('properties', {}).items():
-            if instance == 32:
-                pass
-            if key in instance:
-                _apply_defaults(instance[key], subschema)
-            else:
-                if 'default' in subschema:
-                    instance[key] = subschema['default']
-
-    elif schema.get('type') == 'array':
-        if 'items' in schema and isinstance(instance, list):
-            for item in instance:
-                _apply_defaults(item, schema['items'])
-
-    elif any(key in schema for key in ['anyOf', 'oneOf', 'allOf']):
-        for _, sub_schema in schema.items():
-            for sub_sub_schema in sub_schema:
-                _apply_defaults(instance, sub_sub_schema)
+    def _check_regs_too_large(self):
+        reg_size = self._reg_cfg['data_size']
+        for reg in self._cfg:
+            num_bits = filters.count_bits(reg['bits'])
+            if num_bits > reg_size:
+                raise ValueError(
+                    f'Register contains too many bits (name: {reg["name"]}, bits: {num_bits} > {reg_size})'
+                )
 
 
 def _calculate_address(config: list, address_incr: int = 1):
@@ -110,23 +94,25 @@ def _calculate_address(config: list, address_incr: int = 1):
             next_offset += address_incr
 
 
-def _apply_default_reg_value(config: list):
-    """Assign default register values"""
-    for reg in config:
-        default_value = reg.get('default_value', None)
-        if default_value is None:
-            reg['default_value'] = 0
-        elif isinstance(default_value, int):
-            pass
-        elif isinstance(default_value, str):
-            if default_value.startswith('0x'):
-                reg['default_value'] = int(default_value[2:], 16)
-            elif default_value.startswith('0b'):
-                reg['default_value'] = int(default_value[2:], 2)
-            else:
-                raise ValueError(
-                    'Invalid default value string. Must start with 0x or 0b'
-                )
-        else:
-            # If the schema rules have been followed, this should not be possible
-            raise ValueError('Unknown default value type')
+def _find_duplicate_addresses(config: list):
+    """Find if there are any duplicate addresses in the address space"""
+    addresses = [reg['addr_offset'] for reg in config]
+
+    duplicates = []
+    for a, b in zip(addresses[:-1], addresses[1:]):
+        if a == b and a not in duplicates:
+            duplicates.append(a)
+
+    if len(duplicates) > 0:
+        print('ERROR: Multiple registers have the same address')
+
+    for d in duplicates:
+        print(f'Address {d}:')
+        for reg in config:
+            if reg['addr_offset'] == d:
+                print(f'\t{reg["name"]}')
+
+    if len(duplicates) > 0:
+        raise ValueError(
+            f'Multiple registers have the same address (addresses: {duplicates})'
+        )
