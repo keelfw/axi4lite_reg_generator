@@ -185,6 +185,7 @@ async def write_enables(dut):
             byte_enable
         )
 
+
 @cocotb.test()
 async def upd_pulse(dut):
     """Verify update pulses are set when registers are updated.
@@ -216,13 +217,13 @@ async def upd_pulse(dut):
     # Write first register
     dut._log.info('Writing first register')
 
-    write_co = cocotb.start_soon(with_timeout(axim.write(4,0), *TIMEOUT))
+    write_co = cocotb.start_soon(with_timeout(axim.write(4, 0), *TIMEOUT))
     await RisingEdge(dut.REGS_ACLK)
     while not (dut.REGS_WVALID == 1 and dut.REGS_WREADY == 1):
         assert dut.R_Scratch_Register_O_upd == 0
         assert dut.R_Register_with_Fields_O_upd == 0
         await RisingEdge(dut.REGS_ACLK)
-    
+
     assert dut.R_Scratch_Register_O_upd == 0
     assert dut.R_Register_with_Fields_O_upd == 0
     await RisingEdge(dut.REGS_ACLK)
@@ -235,13 +236,13 @@ async def upd_pulse(dut):
 
     # Write second register
     dut._log.info('Writing second register')
-    write_co = cocotb.start_soon(with_timeout(axim.write(64,0), *TIMEOUT))
+    write_co = cocotb.start_soon(with_timeout(axim.write(64, 0), *TIMEOUT))
     await RisingEdge(dut.REGS_ACLK)
     while not (dut.REGS_WVALID == 1 and dut.REGS_WREADY == 1):
         assert dut.R_Scratch_Register_O_upd == 0
         assert dut.R_Register_with_Fields_O_upd == 0
         await RisingEdge(dut.REGS_ACLK)
-    
+
     assert dut.R_Scratch_Register_O_upd == 0
     assert dut.R_Register_with_Fields_O_upd == 0
     await RisingEdge(dut.REGS_ACLK)
