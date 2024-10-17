@@ -19,6 +19,7 @@ Generate a VHDL register file with an AXI4-Lite interface from JSON
     "name" : "Scratch_Register",
     "description" : "This is a scratch register",
     "reg_type" : "rw",
+    "use_upd_pulse" : true,
     "bits" : {
       "num_bits" : 32,
       "default_value" : 0
@@ -29,6 +30,7 @@ Generate a VHDL register file with an AXI4-Lite interface from JSON
     "description" : "This register has fields",
     "reg_type" : "custom",
     "addr_offset" : 64,
+    "use_upd_pulse" : true,
     "bits" : [
       {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff"},
       {"field_name" : "reg4", "num_bits" : 4}
@@ -43,13 +45,14 @@ Generate a VHDL register file with an AXI4-Lite interface from JSON
 
 # Register Configuration Schema
 
-| field       | required | type               | default | description                |
-| -----       | -------- | ----               | ------- | -----------                |
-| name        | yes      | str                | N/A     | Name of register           |
-| description | no       | str                |         | Description of register    |
-| reg_type    | no       | enum(ro,rw,custom) | ro      | Type of register           |
-| addr_offset | no       | int                | *       | Address byte offset        |
-| bits        | yes      | see below          | N/A     | Bit definition of register |
+| field         | required | type               | default | description                                         |
+| -----         | -------- | ----               | ------- | -----------                                         |
+| name          | yes      | str                | N/A     | Name of register                                    |
+| description   | no       | str                |         | Description of register                             |
+| reg_type      | no       | enum(ro,rw,custom) | ro      | Type of register                                    |
+| addr_offset   | no       | int                | *       | Address byte offset                                 |
+| use_upd_pulse | no       | boolean            | false   | Add _upd signal on output indicating register write |
+| bits          | yes      | see below          | N/A     | Bit definition of register                          |
 
 \* If addr_offset byte address is not specified, next byte address will be used. In the example above, the first register will have address `0x00`, the next address will have `0x04` since this is a 32-bit data bus width. If an additional register was put after "Register_with_Fields" (address 64 or `0x40`) it would have address `0x44`.
 

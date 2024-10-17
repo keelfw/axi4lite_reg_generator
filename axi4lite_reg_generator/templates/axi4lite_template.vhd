@@ -22,6 +22,9 @@ port (
   {% endif -%}
   {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
   R_{{ reg['name'] }}_O :  out std_logic_vector({{ reg['bits']|count_bits - 1 }} downto 0);
+  {% if reg['use_upd_pulse'] -%}
+  R_{{ reg['name'] }}_O_upd : out std_logic;
+  {% endif -%}
   {% endif -%}
   {% endfor %}
   -- Write Address Channel
@@ -186,13 +189,26 @@ begin
         {% for reg in regs -%}
           {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
             REG_{{ reg['name'] }}_W <= {{ reg|default_val }};
+            {% if reg['use_upd_pulse'] %}
+            R_{{ reg['name'] }}_O_upd <= '0';
+            {% endif %}
           {% endif %}
         {% endfor -%}
       else
+        {% for reg in regs -%}
+          {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
+          {% if reg['use_upd_pulse'] %}
+          R_{{ reg['name'] }}_O_upd <= '0';
+          {% endif %}
+          {% endif %}
+        {% endfor -%}
         if REGS_WVALID = '1' and w_ready = '1' then
             {% for reg in regs -%}
               {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
                 if address_wr = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) then
+                  {% if reg['use_upd_pulse'] %}
+                  R_{{ reg['name'] }}_O_upd <= '1';
+                  {% endif %}
                   REGS_BRESP <= AXI_RESP_OKAY;
                   {% for s in range(strobe_size) -%}
                     {% if 8*s < reg['bits']|count_bits %}
