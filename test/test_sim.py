@@ -184,3 +184,72 @@ async def write_enables(dut):
         assert await with_timeout(axim.read(0x0004), *TIMEOUT) == calc_value(
             byte_enable
         )
+
+@cocotb.test()
+async def upd_pulse(dut):
+    """Verify update pulses are set when registers are updated.
+
+    Expected Results:
+        All _upd signals are '1' when registers are updated, else '0'
+    """
+
+    # Reset
+    axim = AXI4LiteMaster(dut, 'REGS', dut.REGS_ACLK)
+    setup_dut(dut)
+    dut.R_Test_Register_I.setimmediatevalue(0xFEEDBACE)
+    dut.R_Register_with_Fields_I.setimmediatevalue(int(2**12 - 1))
+    cocotb.start_soon(reset(dut.REGS_ARESETN, 5 * CLK_PERIOD_NS, units='ns'))
+    await Timer(3 * CLK_PERIOD_NS, units='ns')
+    dut._log.info('Checking Reset State')
+    assert dut.R_Scratch_Register_O_upd == 0
+    assert dut.R_Register_with_Fields_O_upd == 0
+
+    await RisingEdge(dut.REGS_ARESETN)
+    dut._log.info('Reset Deasserted')
+    await ClockCycles(dut.REGS_ACLK, 5)
+
+    # Read Defaults
+    dut._log.info('Checking default values')
+    assert dut.R_Scratch_Register_O_upd == 0
+    assert dut.R_Register_with_Fields_O_upd == 0
+
+    # Write first register
+    dut._log.info('Writing first register')
+
+    write_co = cocotb.start_soon(with_timeout(axim.write(4,0), *TIMEOUT))
+    await RisingEdge(dut.REGS_ACLK)
+    while not (dut.REGS_WVALID == 1 and dut.REGS_WREADY == 1):
+        assert dut.R_Scratch_Register_O_upd == 0
+        assert dut.R_Register_with_Fields_O_upd == 0
+        await RisingEdge(dut.REGS_ACLK)
+    
+    assert dut.R_Scratch_Register_O_upd == 0
+    assert dut.R_Register_with_Fields_O_upd == 0
+    await RisingEdge(dut.REGS_ACLK)
+
+    assert dut.R_Scratch_Register_O_upd == 1
+    assert dut.R_Register_with_Fields_O_upd == 0
+    await RisingEdge(dut.REGS_ACLK)
+
+    await write_co
+
+    # Write second register
+    dut._log.info('Writing second register')
+    write_co = cocotb.start_soon(with_timeout(axim.write(64,0), *TIMEOUT))
+    await RisingEdge(dut.REGS_ACLK)
+    while not (dut.REGS_WVALID == 1 and dut.REGS_WREADY == 1):
+        assert dut.R_Scratch_Register_O_upd == 0
+        assert dut.R_Register_with_Fields_O_upd == 0
+        await RisingEdge(dut.REGS_ACLK)
+    
+    assert dut.R_Scratch_Register_O_upd == 0
+    assert dut.R_Register_with_Fields_O_upd == 0
+    await RisingEdge(dut.REGS_ACLK)
+
+    assert dut.R_Scratch_Register_O_upd == 0
+    assert dut.R_Register_with_Fields_O_upd == 1
+    await RisingEdge(dut.REGS_ACLK)
+
+    await write_co
+
+    dut._log.info('Test complete')

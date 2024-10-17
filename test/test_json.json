@@ -13,6 +13,7 @@
     "name" : "Scratch_Register",
     "description" : "This is a scratch register",
     "reg_type" : "rw",
+    "use_upd_pulse" : true,
     "bits" : {
       "num_bits" : 32,
       "default_value" : 0
@@ -23,6 +24,7 @@
     "description" : "This register has fields",
     "reg_type" : "custom",
     "addr_offset" : 64,
+    "use_upd_pulse" : true,
     "bits" : [
       {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff"},
       {"field_name" : "reg4", "num_bits" : 4}
