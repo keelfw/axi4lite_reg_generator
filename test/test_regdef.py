@@ -169,3 +169,12 @@ def test_json_output():
     assert reg._cfg == reg_new._cfg
     assert reg._reg_cfg == reg_new._reg_cfg
     assert reg.to_vhdl() == reg_new.to_vhdl()
+
+
+def test_md_output():
+    reg = axi4lite_reg_generator.RegDef.from_json_file(
+        os.path.join(test_dir, 'test_json.json')
+    )
+
+    with open(os.path.join(test_dir, '_test.md'), 'w') as f:
+        f.write(reg.to_md())

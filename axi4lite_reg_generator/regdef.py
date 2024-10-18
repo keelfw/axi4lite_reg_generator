@@ -61,6 +61,9 @@ class RegDef:
     def to_vhdl(self):
         return self._render_template('axi4lite_template.vhd')
 
+    def to_md(self):
+        return self._render_template('doc.md')
+
     def _render_template(self, template_file, template_dir=template_dir):
         j2env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
         j2env.filters['count_bits'] = filters.count_bits
