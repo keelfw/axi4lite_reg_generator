@@ -28,6 +28,11 @@ class RegDef:
     def __str__(self):
         return str(self._cfg)
 
+    def get_reg_json(self, indent=4):
+        full_cfg = self._cfg.copy()
+        full_cfg.insert(0, dict(config=self._reg_cfg))
+        return json.dumps(full_cfg, indent=indent)
+
     @staticmethod
     def from_json_file(json_file):
         with open(json_file, 'r') as f:
@@ -55,6 +60,9 @@ class RegDef:
 
     def to_vhdl(self):
         return self._render_template('axi4lite_template.vhd')
+
+    def to_md(self):
+        return self._render_template('doc.md')
 
     def _render_template(self, template_file, template_dir=template_dir):
         j2env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))

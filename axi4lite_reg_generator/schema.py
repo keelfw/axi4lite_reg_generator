@@ -42,6 +42,7 @@ SCHEMA = Schema(
                             Optional('default_value', default=0): Or(
                                 int, Use(anyToInt)
                             ),
+                            Optional('description', default=''): str,
                         }
                     ],
                 ),
