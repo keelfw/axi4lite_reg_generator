@@ -34,6 +34,9 @@ def main():
     else:
         with open(args.output, 'w') as f_out:
             f_out.write(regs.to_vhdl())
+        documentation_file = os.path.splitext(args.output)[0] + '.md'
+        with open(documentation_file, 'w') as f_out:
+            f_out.write(regs.to_md())
 
 
 if __name__ == '__main__':
