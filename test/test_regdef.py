@@ -1,7 +1,3 @@
-import sys
-
-sys.path.append('../axi4lite_reg_generator')
-
 import os
 import axi4lite_reg_generator
 import subprocess
@@ -9,8 +5,7 @@ import cocotb_test.simulator
 import uuid
 import json
 import pytest
-
-test_dir = os.path.dirname(__file__)
+from test import test_dir
 
 
 def test_check_ghdl_installed():
@@ -72,13 +67,14 @@ def test_basic_vhd():
     test_file = os.path.join(test_dir, f'_test_{uuid.uuid4().hex}.vhd')
     with open(test_file, 'w') as f:
         f.write(reg.to_vhdl())
-    x = subprocess.run(['ghdl', '-a', test_file], capture_output=True, text=True)
+    try:
+        x = subprocess.run(['ghdl', '-a', test_file], capture_output=True, text=True)
+    finally:
+        os.remove(test_file)
     assert x.returncode == 0, (
         f'VHDL did not successfully compile in GHDL. See file: {test_file}\nError:\n'
         + x.stderr
     )
-
-    os.remove(test_file)
 
 
 def test_duplicate_detection():
