@@ -155,3 +155,17 @@ def test_rtlsim():
         module='test.test_sim',
         simulator='ghdl',
     )
+
+
+def test_json_output():
+    reg = axi4lite_reg_generator.RegDef.from_json_file(
+        os.path.join(test_dir, 'test_json.json')
+    )
+
+    reg_str = reg.get_reg_json()
+
+    reg_new = axi4lite_reg_generator.RegDef(reg_str)
+
+    assert reg._cfg == reg_new._cfg
+    assert reg._reg_cfg == reg_new._reg_cfg
+    assert reg.to_vhdl() == reg_new.to_vhdl()
