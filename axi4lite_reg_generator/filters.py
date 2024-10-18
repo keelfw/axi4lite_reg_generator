@@ -20,7 +20,7 @@ def get_offset(bits, field_name):
         return 0
     else:
         offset = 0
-        for field in bits:
+        for field in reversed(bits):
             if field['field_name'] == field_name:
                 return offset
             offset += field['num_bits']
