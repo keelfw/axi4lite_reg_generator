@@ -165,6 +165,7 @@ cython_debug/
 # Ruff
 .ruff_cache
 
-# Compiled vhdl
+# Compiled vhdl and simulations
 _test*.vhd
-OsvvmLibraries
+sim_build
+work-*.cf

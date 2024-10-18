@@ -24,6 +24,7 @@ referencing = "0.35.1"
 rpds-py = "0.20.0"
 tomli = "2.0.1"
 schema = "^0.7.7"
+argparse = "^1.4.0"
 
 [tool.poetry.dev-dependencies]
 # You can include other dev dependencies here

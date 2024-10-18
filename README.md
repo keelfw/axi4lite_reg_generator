@@ -1,5 +1,5 @@
 # axi4lite_reg_generator
-Generate a VHDL register file with an AXI4-Lite interface from JSON
+Python tool to generate a VHDL register file with an AXI4-Lite interface from JSON.
 
 # Example
 
@@ -102,4 +102,28 @@ Each field has its own unique name, number of bits, and optional default value. 
 | reg4  | 3..0   | 0       |
 
 # Instructions to Create Register File
-Todo...
+In a simple example, if you have the json file shown in the example above saved as `my_regs.json`, type the following into the command prompt to create `my_regs.vhd`.
+```bash
+$ python -m axi4lite_reg_generator my_regs.json -o my_regs.vhd
+```
+
+To see the full list of usage options, type the following command into the command prompt.
+
+```bash
+$ python -m axi4lite_reg_generator --help
+```
+
+This results in the following usage information:
+```
+usage: AXI4Lite Register Generator [-h] [-o OUTPUT] json_input
+
+Generate a VHDL register file with an AXI4-Lite interface from JSON
+
+positional arguments:
+  json_input            Register configuration JSON file
+
+options:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        Save output to file
+```

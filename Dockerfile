@@ -12,22 +12,7 @@ RUN apt-get -y update && \
     python3-poetry \
     python-is-python3
 
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y \
-    rlwrap \
-    tclsh \
-    tcllib \
-    git \
-    vim
-
 COPY ./ /reg/
-
-# RUN mkdir -p /osvvm/libs && \
-#     git clone --recursive https://github.com/osvvm/OsvvmLibraries /osvvm/OsvvmLibraries && \
-#     tclsh compile_osvvm.tcl
-
-# RUN echo -e 'namespace eval ::osvvm {\nvariable VhdlLibraryParentDirectory "/osvvm/libs"\n}' > \
-#     /osvvm/OsvvmLibraries/Scripts/OsvvmSettingsLocal.tcl
 
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction \
