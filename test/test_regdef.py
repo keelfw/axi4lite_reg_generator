@@ -85,7 +85,7 @@ def test_duplicate_detection():
     cfg.append(dict(name='dup_addr', addr_offset=4, bits=32))
 
     with pytest.raises(ValueError) as e_info:
-        axi4lite_reg_generator.RegDef(json.dumps(cfg))
+        axi4lite_reg_generator.RegDef(*axi4lite_reg_generator.RegDef._split_config(cfg))
 
     assert e_info.type is ValueError
     assert (
@@ -100,7 +100,7 @@ def test_duplicate_detection():
     cfg.append(dict(name='dup_addr', addr_offset=64, bits=32))
 
     with pytest.raises(ValueError) as e_info:
-        axi4lite_reg_generator.RegDef(json.dumps(cfg))
+        axi4lite_reg_generator.RegDef(*axi4lite_reg_generator.RegDef._split_config(cfg))
 
     assert e_info.type is ValueError
     assert (
@@ -131,7 +131,9 @@ def test_address_too_large():
         cfg.append(too_long_reg)
 
         with pytest.raises(ValueError) as e_info:
-            axi4lite_reg_generator.RegDef(json.dumps(cfg))
+            axi4lite_reg_generator.RegDef(
+                *axi4lite_reg_generator.RegDef._split_config(cfg)
+            )
 
         assert e_info.type is ValueError
         assert (
@@ -164,7 +166,10 @@ def test_json_output():
 
     reg_str = reg.get_reg_json()
 
-    reg_new = axi4lite_reg_generator.RegDef(reg_str)
+    cfg_new = json.loads(reg_str)
+    reg_new = axi4lite_reg_generator.RegDef(
+        *axi4lite_reg_generator.RegDef._split_config(cfg_new)
+    )
 
     assert reg._cfg == reg_new._cfg
     assert reg._reg_cfg == reg_new._reg_cfg
@@ -178,3 +183,7 @@ def test_md_output():
 
     with open(os.path.join(test_dir, '_test.md'), 'w') as f:
         f.write(reg.to_md())
+
+
+def test_basic_heirarchy():
+    pass

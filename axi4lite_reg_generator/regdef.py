@@ -4,20 +4,16 @@ import jinja2
 import axi4lite_reg_generator.filters as filters
 from axi4lite_reg_generator.schema import SCHEMA as Schema
 
-axi4_lite_reg_generator_schema_file = os.path.join(
-    os.path.dirname(__file__), 'schema.json'
-)
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 
 
 class RegDef:
-    def __init__(self, json_string):
-        # Parse the json string into a dict and validate
-        self._cfg = json.loads(json_string)
+    def __init__(self, reg_cfg: dict, cfg: dict):
+        # Validate the configuration data
+        self._cfg = cfg
         self._cfg = Schema.validate(self._cfg)
-
-        # split the configuration from the register array
-        self._split_config()
+        self._reg_cfg = reg_cfg
+        Schema.validate([dict(config=self._reg_cfg)])
 
         self._addr_incr = int(self._reg_cfg['data_size'] / 8)
 
@@ -34,29 +30,49 @@ class RegDef:
         return json.dumps(full_cfg, indent=indent)
 
     @staticmethod
+    def _flatten_heirarchy(cfg, instance=None, level=0):
+        Schema.validate(cfg)
+        reg_cfg, cfg = RegDef._split_config(cfg, level == 0)
+        full_cfg = []
+        for item in cfg:
+            if 'file' in item:
+                with open(item['file'], 'r') as f:
+                    new_cfg = json.load(f)
+                new_instance = (
+                    instance
+                    if 'instance' not in item or item['instance'] is None
+                    else '.'.join(instance, item['instance'])
+                )
+                full_cfg.extend(
+                    RegDef._flatten_heirarchy(new_cfg, new_instance, level + 1)[1]
+                )
+            else:
+                full_cfg.append(item)
+
+        return reg_cfg, full_cfg
+
+    @staticmethod
     def from_json_file(json_file):
         with open(json_file, 'r') as f:
-            json_string = f.read()
-        return RegDef(json_string)
+            cfg = json.load(f)
 
-    def _split_config(self):
+        reg_cfg, full_cfg = RegDef._flatten_heirarchy(cfg)
+        return RegDef(reg_cfg, full_cfg)
+
+    @staticmethod
+    def _split_config(cfg: dict, require_config=True):
         config_found = False
-        for idx, c in enumerate(self._cfg):
+        for idx, c in enumerate(cfg):
             if 'config' in c:
                 config_found = True
                 break
 
         if config_found:
-            self._reg_cfg = self._cfg.pop(idx)['config']
-        else:
+            reg_cfg = cfg.pop(idx)['config']
+        elif require_config:
             raise ValueError('Could not find configuration')
 
-    @staticmethod
-    def _load_schema(schema_file=axi4_lite_reg_generator_schema_file):
-        with open(schema_file, 'r') as f:
-            # schema = f.read()
-            schema = json.load(f)
-        return schema
+        return reg_cfg, cfg
 
     def to_vhdl(self):
         return self._render_template('axi4lite_template.vhd')
