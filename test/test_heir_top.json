@@ -1,0 +1,30 @@
+[
+    {
+        "config" : {
+            "data_size" : 32
+        }
+    },
+    {
+        "name" : "Heir_Register_Top",
+        "description" : "This is a register at the top level",
+        "bits" : 32
+    },
+    {
+        "name" : "Heirarchy_One",
+        "description" : "This is an example of some basic heirarchy",
+        "file" : "test_json.json",
+        "instance" : "h1",
+        "addr_offset" : 128
+    },
+    {
+        "name" : "Heirarchy_Two",
+        "description" : "Repeat the thing twice",
+        "file" : "test_json.json",
+        "instance" : "h2"
+    },
+    {
+        "name" : "Heirarchy_Three",
+        "description" : "Repeat the thing three times without instance",
+        "file" : "test_json.json"
+    }
+]

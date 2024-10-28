@@ -186,4 +186,6 @@ def test_md_output():
 
 
 def test_basic_heirarchy():
-    pass
+    reg = axi4lite_reg_generator.RegDef.from_json_file(
+        os.path.join(test_dir, 'test_heir_top.json')
+    )

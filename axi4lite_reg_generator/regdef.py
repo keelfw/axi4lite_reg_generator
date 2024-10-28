@@ -30,21 +30,21 @@ class RegDef:
         return json.dumps(full_cfg, indent=indent)
 
     @staticmethod
-    def _flatten_heirarchy(cfg, instance=None, level=0):
+    def _flatten_heirarchy(cfg, path_to_cfg='.', instance=None, level=0):
         Schema.validate(cfg)
         reg_cfg, cfg = RegDef._split_config(cfg, level == 0)
         full_cfg = []
         for item in cfg:
             if 'file' in item:
-                with open(item['file'], 'r') as f:
+                with open(os.path.join(path_to_cfg, item['file']), 'r') as f:
                     new_cfg = json.load(f)
                 new_instance = (
                     instance
                     if 'instance' not in item or item['instance'] is None
-                    else '.'.join(instance, item['instance'])
+                    else '.'.join((instance, item['instance']))
                 )
                 full_cfg.extend(
-                    RegDef._flatten_heirarchy(new_cfg, new_instance, level + 1)[1]
+                    RegDef._flatten_heirarchy(new_cfg, path_to_cfg, new_instance, level + 1)[1]
                 )
             else:
                 full_cfg.append(item)
@@ -53,10 +53,11 @@ class RegDef:
 
     @staticmethod
     def from_json_file(json_file):
+        path_to_cfg = os.path.split(json_file)[0]
         with open(json_file, 'r') as f:
             cfg = json.load(f)
 
-        reg_cfg, full_cfg = RegDef._flatten_heirarchy(cfg)
+        reg_cfg, full_cfg = RegDef._flatten_heirarchy(cfg, path_to_cfg=path_to_cfg)
         return RegDef(reg_cfg, full_cfg)
 
     @staticmethod
