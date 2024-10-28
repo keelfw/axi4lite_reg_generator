@@ -34,7 +34,7 @@ The tool also creates detailed register documentation that can be used in a hard
     "addr_offset" : 64,
     "use_upd_pulse" : true,
     "bits" : [
-      {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff"},
+      {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff", "description" : "This is my 8 bit field"},
       {"field_name" : "reg4", "num_bits" : 4}
     ]
   }
@@ -87,11 +87,11 @@ This is only valid for register types `rw` and `custom`. This sets the default (
 ```
 
 3. Provide a breakdown of sub-register elements
-Sometimes a single register has more than one meaning. This is useful for combining multiple small data types or status/control flags.
+Sometimes a single register has more than one meaning. This is useful for combining multiple small data types or status/control flags. An optional `description` field can be added to help with generated documentation.
 
 ```json
 "bits" : [
-    {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff"},
+    {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff", "description" : "This is my 8 bit field"},
     {"field_name" : "reg4", "num_bits" : 4}
 ]
 ```
