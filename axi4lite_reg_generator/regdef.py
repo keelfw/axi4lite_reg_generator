@@ -38,11 +38,14 @@ class RegDef:
             if 'file' in item:
                 with open(os.path.join(path_to_cfg, item['file']), 'r') as f:
                     new_cfg = json.load(f)
-                new_instance = (
-                    instance
-                    if 'instance' not in item or item['instance'] is None
-                    else '.'.join((instance, item['instance']))
-                )
+                if 'instance' in item:
+                    if instance is None:
+                        new_instance = item['instance']
+                    else:
+                        new_instance = '.'.join((instance, item['instance']))
+                if 'instance' not in item or item['instance'] is None:
+                    new_instance = instance
+
                 full_cfg.extend(
                     RegDef._flatten_heirarchy(new_cfg, path_to_cfg, new_instance, level + 1)[1]
                 )
