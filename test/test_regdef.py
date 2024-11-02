@@ -85,12 +85,12 @@ def test_duplicate_detection():
     cfg.append(dict(name='dup_addr', addr_offset=4, bits=32))
 
     with pytest.raises(ValueError) as e_info:
-        axi4lite_reg_generator.RegDef(*axi4lite_reg_generator.RegDef._split_config(cfg))
+        axi4lite_reg_generator.RegDef(cfg)
 
     assert e_info.type is ValueError
     assert (
         str(e_info.value)
-        == r'Specifying fixed address offset less than running next addr_offset not allowed'
+        == r'Multiple registers have the same address (addresses: [4])'
     )
 
     json_file = os.path.join(test_dir, 'test_json.json')
@@ -100,12 +100,12 @@ def test_duplicate_detection():
     cfg.append(dict(name='dup_addr', addr_offset=64, bits=32))
 
     with pytest.raises(ValueError) as e_info:
-        axi4lite_reg_generator.RegDef(*axi4lite_reg_generator.RegDef._split_config(cfg))
+        axi4lite_reg_generator.RegDef(cfg)
 
     assert e_info.type is ValueError
     assert (
         str(e_info.value)
-        == r'Specifying fixed address offset less than running next addr_offset not allowed'
+        == r'Multiple registers have the same address (addresses: [64])'
     )
 
 
@@ -131,9 +131,7 @@ def test_address_too_large():
         cfg.append(too_long_reg)
 
         with pytest.raises(ValueError) as e_info:
-            axi4lite_reg_generator.RegDef(
-                *axi4lite_reg_generator.RegDef._split_config(cfg)
-            )
+            axi4lite_reg_generator.RegDef(cfg)
 
         assert e_info.type is ValueError
         assert (
@@ -167,9 +165,7 @@ def test_json_output():
     reg_str = reg.get_reg_json()
 
     cfg_new = json.loads(reg_str)
-    reg_new = axi4lite_reg_generator.RegDef(
-        *axi4lite_reg_generator.RegDef._split_config(cfg_new)
-    )
+    reg_new = axi4lite_reg_generator.RegDef(cfg_new)
 
     assert reg._cfg == reg_new._cfg
     assert reg._reg_cfg == reg_new._reg_cfg
@@ -186,6 +182,11 @@ def test_md_output():
 
 
 def test_basic_heirarchy():
+    # TODO: Need to actually build a test...
+    
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_heir_top.json')
     )
+
+    print(reg.to_md())
+    print()

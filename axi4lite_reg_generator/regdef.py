@@ -8,16 +8,19 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 
 
 class RegDef:
-    def __init__(self, reg_cfg: dict, cfg: dict):
+    def __init__(self, cfg: dict, path_to_cfg='.'):
         # Validate the configuration data
-        self._cfg = cfg
+        self._next_address = 0
+
+        self._reg_cfg, self._cfg = self._split_config(cfg)
         self._cfg = Schema.validate(self._cfg)
-        self._reg_cfg = reg_cfg
         Schema.validate([dict(config=self._reg_cfg)])
 
         self._addr_incr = int(self._reg_cfg['data_size'] / 8)
 
-        _calculate_address(self._cfg, self._addr_incr)
+        self._cfg = self._flatten_heirarchy(self._cfg, path_to_cfg)
+
+        # _calculate_address(self._cfg, self._addr_incr)
         _find_duplicate_addresses(self._cfg)
         self._check_regs_too_large()
 
@@ -29,30 +32,54 @@ class RegDef:
         full_cfg.insert(0, dict(config=self._reg_cfg))
         return json.dumps(full_cfg, indent=indent)
 
-    @staticmethod
-    def _flatten_heirarchy(cfg, path_to_cfg='.', instance=None, level=0):
+    def _flatten_heirarchy(
+        self, cfg, path_to_cfg='.', instance=None, level=0, rel_addr: int = 0
+    ):
         Schema.validate(cfg)
-        reg_cfg, cfg = RegDef._split_config(cfg, level == 0)
+        reg_cfg, cfg = RegDef._split_config(cfg, False)
+        if reg_cfg is not None:
+            assert reg_cfg['data_size'] == self._reg_cfg['data_size']
+
         full_cfg = []
         for item in cfg:
             if 'file' in item:
                 with open(os.path.join(path_to_cfg, item['file']), 'r') as f:
                     new_cfg = json.load(f)
-                if 'instance' in item:
-                    if instance is None:
-                        new_instance = item['instance']
-                    else:
-                        new_instance = '.'.join((instance, item['instance']))
-                if 'instance' not in item or item['instance'] is None:
-                    new_instance = instance
+                new_instance = (
+                    item['name']
+                    if instance is None
+                    else '.'.join((instance, item['name']))
+                )
 
+                self._set_next_address(item.get('addr_offset', None), rel_addr)
                 full_cfg.extend(
-                    RegDef._flatten_heirarchy(new_cfg, path_to_cfg, new_instance, level + 1)[1]
+                    self._flatten_heirarchy(
+                        new_cfg,
+                        path_to_cfg,
+                        new_instance,
+                        level + 1,
+                        self._next_address,
+                    )
                 )
             else:
+                item['addr_offset'] = self._take_next_address(
+                    item.get('addr_offset', None), rel_addr
+                )
                 full_cfg.append(item)
 
-        return reg_cfg, full_cfg
+        return full_cfg
+
+    def _take_next_address(self, force: int | None = None, offset: int = 0):
+        if force is not None:
+            self._next_address = force + offset
+
+        next_addr = self._next_address
+        self._next_address += self._addr_incr
+        return next_addr
+
+    def _set_next_address(self, addr: int | None, offset: int = 0):
+        if addr is not None:
+            self._next_address = addr + offset
 
     @staticmethod
     def from_json_file(json_file):
@@ -60,11 +87,12 @@ class RegDef:
         with open(json_file, 'r') as f:
             cfg = json.load(f)
 
-        reg_cfg, full_cfg = RegDef._flatten_heirarchy(cfg, path_to_cfg=path_to_cfg)
-        return RegDef(reg_cfg, full_cfg)
+        return RegDef(cfg, path_to_cfg=path_to_cfg)
 
     @staticmethod
     def _split_config(cfg: dict, require_config=True):
+        reg_cfg = None
+
         config_found = False
         for idx, c in enumerate(cfg):
             if 'config' in c:
@@ -93,7 +121,12 @@ class RegDef:
 
         template = j2env.get_template(template_file)
 
-        _tmp = dict(entity_name='reg_file', data_size=32, strobe_size=4, regs=self._cfg)
+        _tmp = dict(
+            entity_name='reg_file',
+            data_size=self._reg_cfg['data_size'],
+            strobe_size=self._reg_cfg['data_size'] // 8,
+            regs=self._cfg,
+        )
         return template.render(_tmp)
 
     def _check_regs_too_large(self):
@@ -125,6 +158,7 @@ def _calculate_address(config: list, address_incr: int = 1):
 def _find_duplicate_addresses(config: list):
     """Find if there are any duplicate addresses in the address space"""
     addresses = [reg['addr_offset'] for reg in config]
+    addresses.sort()
 
     duplicates = []
     for a, b in zip(addresses[:-1], addresses[1:]):

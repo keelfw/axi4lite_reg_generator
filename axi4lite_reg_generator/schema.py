@@ -51,7 +51,6 @@ SCHEMA = Schema(
             {
                 'name': str,
                 'file': str,
-                Optional('instance'): str,
                 Optional('description'): str,
                 Optional('addr_offset'): int,
             },
