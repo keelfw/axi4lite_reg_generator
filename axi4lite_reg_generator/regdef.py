@@ -21,7 +21,7 @@ class RegDef:
         self._cfg = self._flatten_heirarchy(self._cfg, path_to_cfg)
 
         # _calculate_address(self._cfg, self._addr_incr)
-        _find_duplicate_addresses(self._cfg)
+        self._find_duplicate_addresses()
         self._check_regs_too_large()
 
     def __str__(self):
@@ -139,42 +139,26 @@ class RegDef:
                 )
 
 
-def _calculate_address(config: list, address_incr: int = 1):
-    """Assign address space for registers"""
-    next_offset = 0
+    def _find_duplicate_addresses(self):
+        """Find if there are any duplicate addresses in the address space"""
+        addresses = [reg['addr_offset'] for reg in self._cfg]
+        addresses.sort()
 
-    for reg in config:
-        if 'addr_offset' in reg:
-            if reg['addr_offset'] < next_offset:
-                raise ValueError(
-                    'Specifying fixed address offset less than running next addr_offset not allowed'
-                )
-            next_offset = reg['addr_offset'] + address_incr
-        else:
-            reg['addr_offset'] = next_offset
-            next_offset += address_incr
+        duplicates = []
+        for a, b in zip(addresses[:-1], addresses[1:]):
+            if a == b and a not in duplicates:
+                duplicates.append(a)
 
+        if len(duplicates) > 0:
+            print('ERROR: Multiple registers have the same address')
 
-def _find_duplicate_addresses(config: list):
-    """Find if there are any duplicate addresses in the address space"""
-    addresses = [reg['addr_offset'] for reg in config]
-    addresses.sort()
+        for d in duplicates:
+            print(f'Address {d}:')
+            for reg in self._cfg:
+                if reg['addr_offset'] == d:
+                    print(f'\t{reg["name"]}')
 
-    duplicates = []
-    for a, b in zip(addresses[:-1], addresses[1:]):
-        if a == b and a not in duplicates:
-            duplicates.append(a)
-
-    if len(duplicates) > 0:
-        print('ERROR: Multiple registers have the same address')
-
-    for d in duplicates:
-        print(f'Address {d}:')
-        for reg in config:
-            if reg['addr_offset'] == d:
-                print(f'\t{reg["name"]}')
-
-    if len(duplicates) > 0:
-        raise ValueError(
-            f'Multiple registers have the same address (addresses: {duplicates})'
-        )
+        if len(duplicates) > 0:
+            raise ValueError(
+                f'Multiple registers have the same address (addresses: {duplicates})'
+            )
