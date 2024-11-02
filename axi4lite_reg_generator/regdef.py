@@ -22,6 +22,7 @@ class RegDef:
 
         # _calculate_address(self._cfg, self._addr_incr)
         self._find_duplicate_addresses()
+        self._find_duplicate_names()
         self._check_regs_too_large()
 
     def __str__(self):
@@ -142,12 +143,7 @@ class RegDef:
     def _find_duplicate_addresses(self):
         """Find if there are any duplicate addresses in the address space"""
         addresses = [reg['addr_offset'] for reg in self._cfg]
-        addresses.sort()
-
-        duplicates = []
-        for a, b in zip(addresses[:-1], addresses[1:]):
-            if a == b and a not in duplicates:
-                duplicates.append(a)
+        duplicates = set([x for x in addresses if addresses.count(x) > 1])
 
         if len(duplicates) > 0:
             print('ERROR: Multiple registers have the same address')
@@ -160,5 +156,22 @@ class RegDef:
 
         if len(duplicates) > 0:
             raise ValueError(
-                f'Multiple registers have the same address (addresses: {duplicates})'
+                f'Multiple registers have the same address (addresses: {list(duplicates)})'
             )
+
+    def _find_duplicate_names(self):
+        """Find if there are any duplicate names in the register file"""
+        names = [reg['name'] for reg in self._cfg]
+        duplicates = set([x for x in names if names.count(x) > 1])
+
+        if len(duplicates) > 0:
+            print('ERROR: Multiple registers have the same name')
+
+        for d in duplicates:
+            print(f'Name {d}:')
+            for reg in self._cfg:
+                if reg['name'] == d:
+                    print(f'\t{reg["name"]}')
+
+        if len(duplicates) > 0:
+            raise ValueError(f'Multiple registers have the same name (names: {list(duplicates)})')

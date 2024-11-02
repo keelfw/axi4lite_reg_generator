@@ -77,7 +77,7 @@ def test_basic_vhd():
     )
 
 
-def test_duplicate_detection():
+def test_duplicate_address_detection():
     json_file = os.path.join(test_dir, 'test_json.json')
     with open(json_file, 'r') as f:
         json_string = f.read()
@@ -108,6 +108,21 @@ def test_duplicate_detection():
         == r'Multiple registers have the same address (addresses: [64])'
     )
 
+def test_duplicate_name_detection():
+    json_file = os.path.join(test_dir, 'test_json.json')
+    with open(json_file, 'r') as f:
+        json_string = f.read()
+    cfg = json.loads(json_string)
+    cfg.append(dict(name='Scratch_Register', addr_offset=8, bits=32))
+
+    with pytest.raises(ValueError) as e_info:
+        axi4lite_reg_generator.RegDef(cfg)
+
+    assert e_info.type is ValueError
+    assert (
+        str(e_info.value)
+        == 'Multiple registers have the same name (names: [\'Scratch_Register\'])'
+    )
 
 def test_address_too_large():
     json_file = os.path.join(test_dir, 'test_json.json')
@@ -183,10 +198,11 @@ def test_md_output():
 
 def test_basic_heirarchy():
     # TODO: Need to actually build a test...
-    
+
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_heir_top.json')
     )
 
     print(reg.to_md())
     print()
+    assert False
