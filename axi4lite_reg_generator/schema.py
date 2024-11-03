@@ -23,10 +23,9 @@ SCHEMA = Schema(
     [
         Or(
             {
-                'config': 
-                {
+                'config': {
                     'data_size': And(PositiveInt, lambda x: x % 8 == 0),
-                    Optional('instance_separator', default='_'): str
+                    Optional('instance_separator', default='_'): str,
                 }
             },
             {

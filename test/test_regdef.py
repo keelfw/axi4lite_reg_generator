@@ -10,11 +10,11 @@ from test import test_dir
 
 def test_check_ghdl_installed():
     """Verify GHDL compiler is installed and accessible.
-    
+
     Tests:
         1. Checks if GHDL executable exists in system PATH
         2. Verifies GHDL help command returns successfully
-    
+
     Raises:
         AssertionError: If GHDL is not found or returns non-zero exit code
     """
@@ -28,7 +28,7 @@ def test_check_ghdl_installed():
 
 def test_basic_definition():
     """Test basic register definition loading and VHDL generation.
-    
+
     Tests:
         1. Loads register definition from JSON file
         2. Verifies VHDL can be generated without errors
@@ -41,7 +41,7 @@ def test_basic_definition():
 
 def test_default_values():
     """Verify default values are correctly set in register configuration.
-    
+
     Tests:
         1. Checks register type is set to 'ro' for first register
         2. Verifies default value is 0 for specific bit field
@@ -56,7 +56,7 @@ def test_default_values():
 
 def test_numeric_conversion():
     """Test numeric value conversion in register configuration.
-    
+
     Tests:
         1. Verifies default value of 0xFF is converted to 255 properly
     """
@@ -69,7 +69,7 @@ def test_numeric_conversion():
 
 def test_address_values():
     """Verify register address assignments.
-    
+
     Tests:
         1. Checks sequential addresses are assigned correctly
         2. Verifies address offset is set to 64
@@ -85,7 +85,7 @@ def test_address_values():
 
 def test_generate_vhd():
     """Test VHDL code generation and file output.
-    
+
     Tests:
         1. Generates VHDL code from register definition
         2. Writes VHDL code to file
@@ -100,12 +100,12 @@ def test_generate_vhd():
 
 def test_basic_vhd():
     """Verify generated VHDL code compiles with GHDL.
-    
+
     Tests:
         1. Generates temporary VHDL file with unique name
         2. Attempts to compile with GHDL
         3. Verifies compilation succeeds
-        
+
     Cleanup:
         Removes temporary VHDL file
     """
@@ -127,12 +127,12 @@ def test_basic_vhd():
 
 def test_duplicate_address_detection():
     """Test detection of duplicate register addresses.
-    
+
     Tests:
         1. Attempts to create registers with duplicate address 4
         2. Verifies ValueError is raised with correct message
         3. Repeats test with address 64
-        
+
     Raises:
         AssertionError: If duplicate addresses not detected
     """
@@ -166,13 +166,14 @@ def test_duplicate_address_detection():
         == r'Multiple registers have the same address (addresses: [64])'
     )
 
+
 def test_duplicate_name_detection():
     """Test detection of duplicate register names.
-    
+
     Tests:
         1. Attempts to create registers with duplicate name 'Scratch_Register'
         2. Verifies ValueError is raised with correct message
-        
+
     Raises:
         AssertionError: If duplicate names not detected
     """
@@ -188,17 +189,18 @@ def test_duplicate_name_detection():
     assert e_info.type is ValueError
     assert (
         str(e_info.value)
-        == 'Multiple registers have the same name (names: [\'Scratch_Register\'])'
+        == "Multiple registers have the same name (names: ['Scratch_Register'])"
     )
+
 
 def test_address_too_large():
     """Test detection of registers exceeding maximum bit width.
-    
+
     Tests:
         1. Attempts to create registers with 33 bits (exceeding 32-bit limit)
         2. Tests various register configurations (simple, dict, field list)
         3. Verifies ValueError is raised with correct message
-        
+
     Raises:
         AssertionError: If oversized registers not detected
     """
@@ -234,7 +236,7 @@ def test_address_too_large():
 
 def test_rtlsim():
     """Test RTL simulation of generated register file.
-    
+
     Tests:
         1. Generates VHDL code
         2. Runs cocotb simulation
@@ -258,7 +260,7 @@ def test_rtlsim():
 
 def test_json_output():
     """Test JSON serialization and deserialization of register configuration.
-    
+
     Tests:
         1. Converts register configuration to JSON
         2. Creates new register definition from JSON
@@ -281,7 +283,7 @@ def test_json_output():
 
 def test_md_output():
     """Test markdown documentation generation.
-    
+
     Tests:
         1. Generates markdown documentation
         2. Writes documentation to file
@@ -296,13 +298,13 @@ def test_md_output():
 
 def test_basic_heirarchy():
     """Test register hierarchy with default separator.
-    
+
     Tests:
         1. Loads hierarchical register configuration
         2. Verifies correct address assignments
         3. Verifies correct name generation with hierarchy
         4. Verifies correct register types
-        
+
     Checks:
         - Address offsets
         - Register names with hierarchy
@@ -316,31 +318,47 @@ def test_basic_heirarchy():
     expected_names = [
         'Heir_Register_Top',
         'Heirarchy_One_Test_Register',
-        'Heirarchy_One_Scratch_Register', 
+        'Heirarchy_One_Scratch_Register',
         'Heirarchy_One_Register_with_Fields',
         'Heirarchy_Two_Test_Register',
         'Heirarchy_Two_Scratch_Register',
         'Heirarchy_Two_Register_with_Fields',
         'Heirarchy_Three_Test_Register',
         'Heirarchy_Three_Scratch_Register',
-        'Heirarchy_Three_Register_with_Fields'
+        'Heirarchy_Three_Register_with_Fields',
     ]
-    expected_types = ['ro', 'ro', 'rw', 'custom', 'ro', 'rw', 'custom', 'ro', 'rw', 'custom']
+    expected_types = [
+        'ro',
+        'ro',
+        'rw',
+        'custom',
+        'ro',
+        'rw',
+        'custom',
+        'ro',
+        'rw',
+        'custom',
+    ]
 
     # Check each register's address, name and type
     for i, cfg in enumerate(reg._cfg):
-        assert cfg['addr_offset'] == expected_addresses[i], f"Wrong address for {cfg['name']}"
-        assert cfg['name'] == expected_names[i], f"Wrong name at address {cfg['addr_offset']}"
+        assert (
+            cfg['addr_offset'] == expected_addresses[i]
+        ), f"Wrong address for {cfg['name']}"
+        assert (
+            cfg['name'] == expected_names[i]
+        ), f"Wrong name at address {cfg['addr_offset']}"
         assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"
+
 
 def test_heirarchy_separator():
     """Test register hierarchy with custom separator.
-    
+
     Tests:
         1. Sets custom hierarchy separator to '__'
         2. Verifies correct name generation with custom separator
         3. Verifies addresses and types remain correct
-        
+
     Checks:
         - Address offsets unchanged
         - Register names with custom separator
@@ -356,19 +374,34 @@ def test_heirarchy_separator():
     expected_names = [
         'Heir_Register_Top',
         'Heirarchy_One__Test_Register',
-        'Heirarchy_One__Scratch_Register', 
+        'Heirarchy_One__Scratch_Register',
         'Heirarchy_One__Register_with_Fields',
         'Heirarchy_Two__Test_Register',
         'Heirarchy_Two__Scratch_Register',
         'Heirarchy_Two__Register_with_Fields',
         'Heirarchy_Three__Test_Register',
         'Heirarchy_Three__Scratch_Register',
-        'Heirarchy_Three__Register_with_Fields'
+        'Heirarchy_Three__Register_with_Fields',
     ]
-    expected_types = ['ro', 'ro', 'rw', 'custom', 'ro', 'rw', 'custom', 'ro', 'rw', 'custom']
+    expected_types = [
+        'ro',
+        'ro',
+        'rw',
+        'custom',
+        'ro',
+        'rw',
+        'custom',
+        'ro',
+        'rw',
+        'custom',
+    ]
 
     # Check each register's address, name and type
     for i, cfg in enumerate(reg._cfg):
-        assert cfg['addr_offset'] == expected_addresses[i], f"Wrong address for {cfg['name']}"
-        assert cfg['name'] == expected_names[i], f"Wrong name at address {cfg['addr_offset']}"
+        assert (
+            cfg['addr_offset'] == expected_addresses[i]
+        ), f"Wrong address for {cfg['name']}"
+        assert (
+            cfg['name'] == expected_names[i]
+        ), f"Wrong name at address {cfg['addr_offset']}"
         assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"
