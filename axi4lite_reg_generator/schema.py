@@ -22,7 +22,13 @@ def anyToInt(v):
 SCHEMA = Schema(
     [
         Or(
-            {'config': {'data_size': And(PositiveInt, lambda x: x % 8 == 0)}},
+            {
+                'config': 
+                {
+                    'data_size': And(PositiveInt, lambda x: x % 8 == 0),
+                    Optional('instance_separator', default='_'): str
+                }
+            },
             {
                 'name': str,
                 Optional('description'): str,

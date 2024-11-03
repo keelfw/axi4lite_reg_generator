@@ -23,6 +23,7 @@
     {
         "name" : "Heirarchy_Three",
         "description" : "Repeat the thing three times without instance",
-        "file" : "test_json.json"
+        "file" : "test_json.json",
+        "addr_offset" : 500
     }
 ]

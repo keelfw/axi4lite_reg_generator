@@ -197,12 +197,55 @@ def test_md_output():
 
 
 def test_basic_heirarchy():
-    # TODO: Need to actually build a test...
-
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_heir_top.json')
     )
 
-    print(reg.to_md())
-    print()
-    assert False
+    expected_addresses = [0, 128, 132, 192, 196, 200, 260, 500, 504, 564]
+    expected_names = [
+        'Heir_Register_Top',
+        'Heirarchy_One_Test_Register',
+        'Heirarchy_One_Scratch_Register', 
+        'Heirarchy_One_Register_with_Fields',
+        'Heirarchy_Two_Test_Register',
+        'Heirarchy_Two_Scratch_Register',
+        'Heirarchy_Two_Register_with_Fields',
+        'Heirarchy_Three_Test_Register',
+        'Heirarchy_Three_Scratch_Register',
+        'Heirarchy_Three_Register_with_Fields'
+    ]
+    expected_types = ['ro', 'ro', 'rw', 'custom', 'ro', 'rw', 'custom', 'ro', 'rw', 'custom']
+
+    # Check each register's address, name and type
+    for i, cfg in enumerate(reg._cfg):
+        assert cfg['addr_offset'] == expected_addresses[i], f"Wrong address for {cfg['name']}"
+        assert cfg['name'] == expected_names[i], f"Wrong name at address {cfg['addr_offset']}"
+        assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"
+
+def test_heirarchy_separator():
+    with open(os.path.join(test_dir, 'test_heir_top.json'), 'r') as f:
+        cfg = json.load(f)
+    cfg[0]['config']['instance_separator'] = '__'
+
+    reg = axi4lite_reg_generator.RegDef(cfg, test_dir)
+
+    expected_addresses = [0, 128, 132, 192, 196, 200, 260, 500, 504, 564]
+    expected_names = [
+        'Heir_Register_Top',
+        'Heirarchy_One__Test_Register',
+        'Heirarchy_One__Scratch_Register', 
+        'Heirarchy_One__Register_with_Fields',
+        'Heirarchy_Two__Test_Register',
+        'Heirarchy_Two__Scratch_Register',
+        'Heirarchy_Two__Register_with_Fields',
+        'Heirarchy_Three__Test_Register',
+        'Heirarchy_Three__Scratch_Register',
+        'Heirarchy_Three__Register_with_Fields'
+    ]
+    expected_types = ['ro', 'ro', 'rw', 'custom', 'ro', 'rw', 'custom', 'ro', 'rw', 'custom']
+
+    # Check each register's address, name and type
+    for i, cfg in enumerate(reg._cfg):
+        assert cfg['addr_offset'] == expected_addresses[i], f"Wrong address for {cfg['name']}"
+        assert cfg['name'] == expected_names[i], f"Wrong name at address {cfg['addr_offset']}"
+        assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"

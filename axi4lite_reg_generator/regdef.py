@@ -14,7 +14,7 @@ class RegDef:
 
         self._reg_cfg, self._cfg = self._split_config(cfg)
         self._cfg = Schema.validate(self._cfg)
-        Schema.validate([dict(config=self._reg_cfg)])
+        self._reg_cfg = Schema.validate([dict(config=self._reg_cfg)])[0]['config']
 
         self._addr_incr = int(self._reg_cfg['data_size'] / 8)
 
@@ -34,9 +34,9 @@ class RegDef:
         return json.dumps(full_cfg, indent=indent)
 
     def _flatten_heirarchy(
-        self, cfg, path_to_cfg='.', instance=None, level=0, rel_addr: int = 0
+        self, cfg, path_to_cfg='.', instance=None, rel_addr: int = 0
     ):
-        Schema.validate(cfg)
+        cfg = Schema.validate(cfg)
         reg_cfg, cfg = RegDef._split_config(cfg, False)
         if reg_cfg is not None:
             assert reg_cfg['data_size'] == self._reg_cfg['data_size']
@@ -46,11 +46,7 @@ class RegDef:
             if 'file' in item:
                 with open(os.path.join(path_to_cfg, item['file']), 'r') as f:
                     new_cfg = json.load(f)
-                new_instance = (
-                    item['name']
-                    if instance is None
-                    else '.'.join((instance, item['name']))
-                )
+                new_instance = self._get_full_name(item['name'], instance)
 
                 self._set_next_address(item.get('addr_offset', None), rel_addr)
                 full_cfg.extend(
@@ -58,7 +54,6 @@ class RegDef:
                         new_cfg,
                         path_to_cfg,
                         new_instance,
-                        level + 1,
                         self._next_address,
                     )
                 )
@@ -66,9 +61,15 @@ class RegDef:
                 item['addr_offset'] = self._take_next_address(
                     item.get('addr_offset', None), rel_addr
                 )
+                item['name'] = self._get_full_name(item['name'], instance)
                 full_cfg.append(item)
 
         return full_cfg
+
+    def _get_full_name(self, name: str, instance: str|None=None):
+        if instance is None:
+            return name
+        return self._reg_cfg['instance_separator'].join((instance, name))
 
     def _take_next_address(self, force: int | None = None, offset: int = 0):
         if force is not None:
