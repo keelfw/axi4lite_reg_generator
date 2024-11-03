@@ -34,7 +34,7 @@ The tool also creates detailed register documentation that can be used in a hard
     "addr_offset" : 64,
     "use_upd_pulse" : true,
     "bits" : [
-      {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff"},
+      {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff", "description" : "This is my 8 bit field"},
       {"field_name" : "reg4", "num_bits" : 4}
     ]
   }
@@ -87,11 +87,11 @@ This is only valid for register types `rw` and `custom`. This sets the default (
 ```
 
 3. Provide a breakdown of sub-register elements
-Sometimes a single register has more than one meaning. This is useful for combining multiple small data types or status/control flags.
+Sometimes a single register has more than one meaning. This is useful for combining multiple small data types or status/control flags. An optional `description` field can be added to help with generated documentation.
 
 ```json
 "bits" : [
-    {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff"},
+    {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff", "description" : "This is my 8 bit field"},
     {"field_name" : "reg4", "num_bits" : 4}
 ]
 ```
@@ -105,6 +105,54 @@ Each field has its own unique name, number of bits, and optional default value. 
 
 # Automated Documentation
 When creating the register file, a markdown file with the register configuration is also created. This file will have the same name as the specified output `.vhd` file but will have a `.md` extension.
+
+# Heirarchy
+
+Register files can include hierarchical configurations by referencing other JSON files. This allows reuse of common register blocks and creation of structured register maps.
+
+Example hierarchy configuration:
+```json
+[
+    {
+        "config" : {
+            "data_size" : 32,
+            "instance_separator" : "_"
+        }
+    },
+    {
+        "name" : "Heir_Register_Top",
+        "description" : "This is a register at the top level",
+        "bits" : 32
+    },
+    {
+        "name" : "Heirarchy_One",
+        "description" : "This is an example of some basic heirarchy",
+        "file" : "test_json.json",
+        "addr_offset" : 128
+    },
+    {
+        "name" : "Heirarchy_Two",
+        "description" : "Repeat the thing twice",
+        "file" : "test_json.json"
+    },
+    {
+        "name" : "Heirarchy_Three",
+        "description" : "Repeat the thing three times without instance",
+        "file" : "test_json.json",
+        "addr_offset" : 500
+    }
+]
+```
+
+This example shows putting a standard register (`Heir_Register_Top`) in the top level and then references a heirarchical register definition three times.
+
+This results in a register map with `Heir_Register_Top` at address 0 and heirarchy as shown:
+1. Heirarchy_One has a starting address of 128 per the configuration
+1. Heirarchy_Two has a starting address immediately following the end of Heirarchy_One since no `addr_offset` is specified
+1. Heirarchy_Three has a starting address of 500
+
+## Resulting Register Naming Convention
+When using heirarchy, the subordinate heirarchical names are prepended with the parent names. By default, they are separated using the `_` character, but this can be changed in the configuration by setting the `instance_separator` value. Prepending the parent prevents naming conflicts in the generated RTL.
 
 # Instructions to Create Register File
 In a simple example, if you have the json file shown in the example above saved as `my_regs.json`, type the following into the command prompt to create `my_regs.vhd` and `my_regs.md`.

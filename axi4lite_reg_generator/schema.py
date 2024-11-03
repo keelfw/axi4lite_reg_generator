@@ -39,13 +39,19 @@ def anyToInt(v):
 SCHEMA = Schema(
     [
         Or(
-            {'config': {'data_size': And(PositiveInt, lambda x: x % 8 == 0)}},
+            {
+                'config': {
+                    'data_size': And(PositiveInt, lambda x: x % 8 == 0),
+                    Optional('instance_separator', default='_'): str,
+                }
+            },
             {
                 'name': str,
                 Optional('description'): str,
                 Optional('reg_type', default='ro'): Or('rw', 'ro', 'custom'),
                 Optional('use_upd_pulse', default=False): bool,
                 Optional('addr_offset'): int,
+                Optional('instance'): str,
                 'bits': Or(
                     PositiveInt,
                     {
@@ -63,6 +69,12 @@ SCHEMA = Schema(
                         }
                     ],
                 ),
+            },
+            {
+                'name': str,
+                'file': str,
+                Optional('description'): str,
+                Optional('addr_offset'): int,
             },
         )
     ]
