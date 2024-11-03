@@ -9,6 +9,15 @@ from test import test_dir
 
 
 def test_check_ghdl_installed():
+    """Verify GHDL compiler is installed and accessible.
+    
+    Tests:
+        1. Checks if GHDL executable exists in system PATH
+        2. Verifies GHDL help command returns successfully
+    
+    Raises:
+        AssertionError: If GHDL is not found or returns non-zero exit code
+    """
     try:
         assert (
             subprocess.run(['ghdl', 'help']).returncode == 0
@@ -18,6 +27,12 @@ def test_check_ghdl_installed():
 
 
 def test_basic_definition():
+    """Test basic register definition loading and VHDL generation.
+    
+    Tests:
+        1. Loads register definition from JSON file
+        2. Verifies VHDL can be generated without errors
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_json.json')
     )
@@ -25,6 +40,12 @@ def test_basic_definition():
 
 
 def test_default_values():
+    """Verify default values are correctly set in register configuration.
+    
+    Tests:
+        1. Checks register type is set to 'ro' for first register
+        2. Verifies default value is 0 for specific bit field
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_json.json')
     )
@@ -34,6 +55,11 @@ def test_default_values():
 
 
 def test_numeric_conversion():
+    """Test numeric value conversion in register configuration.
+    
+    Tests:
+        1. Verifies default value of 0xFF is converted to 255 properly
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_json.json')
     )
@@ -42,6 +68,12 @@ def test_numeric_conversion():
 
 
 def test_address_values():
+    """Verify register address assignments.
+    
+    Tests:
+        1. Checks sequential addresses are assigned correctly
+        2. Verifies address offset is set to 64
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_json.json')
     )
@@ -52,6 +84,12 @@ def test_address_values():
 
 
 def test_generate_vhd():
+    """Test VHDL code generation and file output.
+    
+    Tests:
+        1. Generates VHDL code from register definition
+        2. Writes VHDL code to file
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_json.json')
     )
@@ -61,6 +99,16 @@ def test_generate_vhd():
 
 
 def test_basic_vhd():
+    """Verify generated VHDL code compiles with GHDL.
+    
+    Tests:
+        1. Generates temporary VHDL file with unique name
+        2. Attempts to compile with GHDL
+        3. Verifies compilation succeeds
+        
+    Cleanup:
+        Removes temporary VHDL file
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_json.json')
     )
@@ -78,6 +126,16 @@ def test_basic_vhd():
 
 
 def test_duplicate_address_detection():
+    """Test detection of duplicate register addresses.
+    
+    Tests:
+        1. Attempts to create registers with duplicate address 4
+        2. Verifies ValueError is raised with correct message
+        3. Repeats test with address 64
+        
+    Raises:
+        AssertionError: If duplicate addresses not detected
+    """
     json_file = os.path.join(test_dir, 'test_json.json')
     with open(json_file, 'r') as f:
         json_string = f.read()
@@ -109,6 +167,15 @@ def test_duplicate_address_detection():
     )
 
 def test_duplicate_name_detection():
+    """Test detection of duplicate register names.
+    
+    Tests:
+        1. Attempts to create registers with duplicate name 'Scratch_Register'
+        2. Verifies ValueError is raised with correct message
+        
+    Raises:
+        AssertionError: If duplicate names not detected
+    """
     json_file = os.path.join(test_dir, 'test_json.json')
     with open(json_file, 'r') as f:
         json_string = f.read()
@@ -125,6 +192,16 @@ def test_duplicate_name_detection():
     )
 
 def test_address_too_large():
+    """Test detection of registers exceeding maximum bit width.
+    
+    Tests:
+        1. Attempts to create registers with 33 bits (exceeding 32-bit limit)
+        2. Tests various register configurations (simple, dict, field list)
+        3. Verifies ValueError is raised with correct message
+        
+    Raises:
+        AssertionError: If oversized registers not detected
+    """
     json_file = os.path.join(test_dir, 'test_json.json')
 
     too_long_regs = [
@@ -156,6 +233,13 @@ def test_address_too_large():
 
 
 def test_rtlsim():
+    """Test RTL simulation of generated register file.
+    
+    Tests:
+        1. Generates VHDL code
+        2. Runs cocotb simulation
+        3. Verifies simulation completes successfully
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_json.json')
     )
@@ -173,6 +257,14 @@ def test_rtlsim():
 
 
 def test_json_output():
+    """Test JSON serialization and deserialization of register configuration.
+    
+    Tests:
+        1. Converts register configuration to JSON
+        2. Creates new register definition from JSON
+        3. Verifies configurations match
+        4. Verifies generated VHDL matches
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_json.json')
     )
@@ -188,6 +280,12 @@ def test_json_output():
 
 
 def test_md_output():
+    """Test markdown documentation generation.
+    
+    Tests:
+        1. Generates markdown documentation
+        2. Writes documentation to file
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_json.json')
     )
@@ -197,6 +295,19 @@ def test_md_output():
 
 
 def test_basic_heirarchy():
+    """Test register hierarchy with default separator.
+    
+    Tests:
+        1. Loads hierarchical register configuration
+        2. Verifies correct address assignments
+        3. Verifies correct name generation with hierarchy
+        4. Verifies correct register types
+        
+    Checks:
+        - Address offsets
+        - Register names with hierarchy
+        - Register types (ro/rw/custom)
+    """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
         os.path.join(test_dir, 'test_heir_top.json')
     )
@@ -223,6 +334,18 @@ def test_basic_heirarchy():
         assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"
 
 def test_heirarchy_separator():
+    """Test register hierarchy with custom separator.
+    
+    Tests:
+        1. Sets custom hierarchy separator to '__'
+        2. Verifies correct name generation with custom separator
+        3. Verifies addresses and types remain correct
+        
+    Checks:
+        - Address offsets unchanged
+        - Register names with custom separator
+        - Register types unchanged
+    """
     with open(os.path.join(test_dir, 'test_heir_top.json'), 'r') as f:
         cfg = json.load(f)
     cfg[0]['config']['instance_separator'] = '__'
