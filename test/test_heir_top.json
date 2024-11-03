@@ -1,7 +1,8 @@
 [
     {
         "config" : {
-            "data_size" : 32
+            "data_size" : 32,
+            "instance_separator" : "_"
         }
     },
     {
