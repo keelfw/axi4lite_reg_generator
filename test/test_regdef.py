@@ -68,7 +68,7 @@ def test_default_values():
     )
 
     assert reg._cfg[0]['reg_type'] == 'ro'
-    assert reg._cfg[2]['bits'][1]['default_value'] == 0
+    assert reg._cfg[2]['bits'][2]['default_value'] == 0
 
 
 def test_numeric_conversion():
@@ -81,7 +81,8 @@ def test_numeric_conversion():
         os.path.join(test_dir, 'test_json.json')
     )
 
-    assert reg._cfg[2]['bits'][0]['default_value'] == 255
+    assert reg._cfg[2]['bits'][1]['default_value'] == 255
+    assert reg._cfg[2]['bits'][0]['default_value'] == 3
 
 
 def test_address_values():

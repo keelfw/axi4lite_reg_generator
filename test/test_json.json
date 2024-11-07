@@ -26,6 +26,7 @@
     "addr_offset" : 64,
     "use_upd_pulse" : true,
     "bits" : [
+      {"field_name" : "reg3", "num_bits" : 3, "default_value" : "0b11"},
       {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff", "description" : "This is my 8 bit field"},
       {"field_name" : "reg4", "num_bits" : 4}
     ]
