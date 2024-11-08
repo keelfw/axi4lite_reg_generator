@@ -56,15 +56,13 @@ SCHEMA = Schema(
                     PositiveInt,
                     {
                         'num_bits': PositiveInt,
-                        Optional('default_value', default=0): Or(int, Use(anyToInt)),
+                        Optional('default_value', default=0): Use(anyToInt),
                     },
                     [
                         {
                             'field_name': str,
                             'num_bits': PositiveInt,
-                            Optional('default_value', default=0): Or(
-                                int, Use(anyToInt)
-                            ),
+                            Optional('default_value', default=0): Use(anyToInt),
                             Optional('description', default=''): str,
                         }
                     ],

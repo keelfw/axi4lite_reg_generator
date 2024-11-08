@@ -22,6 +22,7 @@ import cocotb_test.simulator
 import uuid
 import json
 import pytest
+import schema
 from test import test_dir
 
 
@@ -69,6 +70,23 @@ def test_default_values():
 
     assert reg._cfg[0]['reg_type'] == 'ro'
     assert reg._cfg[2]['bits'][2]['default_value'] == 0
+
+def test_bad_default_values():
+    default_to_try = [18, 'hello', (1,)]
+
+    for idx, default_value in enumerate(default_to_try):
+        json_file = os.path.join(test_dir, 'test_json.json')
+        with open(json_file, 'r') as f:
+            json_string = f.read()
+        cfg = json.loads(json_string)
+        cfg.append(dict(name='bad_default1', bits=dict(num_bits=32, default_value=default_value)))
+
+        if idx > 0:
+            with pytest.raises(schema.SchemaError) as e_info:
+                axi4lite_reg_generator.RegDef(cfg)
+        else:
+            axi4lite_reg_generator.RegDef(cfg)
+
 
 
 def test_numeric_conversion():
