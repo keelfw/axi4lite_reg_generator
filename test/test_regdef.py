@@ -71,7 +71,18 @@ def test_default_values():
     assert reg._cfg[0]['reg_type'] == 'ro'
     assert reg._cfg[2]['bits'][2]['default_value'] == 0
 
+
 def test_bad_default_values():
+    """Test validation of register default values.
+
+    Tests:
+        1. Tests various invalid default values: integer > 16, string, tuple
+        2. Verifies schema validation catches non-numeric values
+        3. Allows valid numeric value (18) to pass
+
+    Raises:
+        schema.SchemaError: When non-numeric or invalid default values are used
+    """
     default_to_try = [18, 'hello', (1,)]
 
     for idx, default_value in enumerate(default_to_try):
@@ -79,14 +90,17 @@ def test_bad_default_values():
         with open(json_file, 'r') as f:
             json_string = f.read()
         cfg = json.loads(json_string)
-        cfg.append(dict(name='bad_default1', bits=dict(num_bits=32, default_value=default_value)))
+        cfg.append(
+            dict(
+                name='bad_default1', bits=dict(num_bits=32, default_value=default_value)
+            )
+        )
 
         if idx > 0:
-            with pytest.raises(schema.SchemaError) as e_info:
+            with pytest.raises(schema.SchemaError):
                 axi4lite_reg_generator.RegDef(cfg)
         else:
             axi4lite_reg_generator.RegDef(cfg)
-
 
 
 def test_numeric_conversion():
@@ -441,3 +455,27 @@ def test_heirarchy_separator():
             cfg['name'] == expected_names[i]
         ), f"Wrong name at address {cfg['addr_offset']}"
         assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"
+
+
+def test_missing_config():
+    """Test error handling when configuration section is missing.
+
+    Tests:
+        1. Loads JSON configuration and removes config section
+        2. Attempts to create RegDef with missing config
+        3. Verifies ValueError is raised with correct message
+
+    Raises:
+        AssertionError: If missing config not detected
+    """
+    json_file = os.path.join(test_dir, 'test_json.json')
+    with open(json_file, 'r') as f:
+        cfg = json.load(f)
+
+    new_cfg = [c for c in cfg if not (isinstance(c, dict) and 'config' in c)]
+
+    with pytest.raises(ValueError) as e_info:
+        axi4lite_reg_generator.RegDef(new_cfg)
+
+    assert e_info.type is ValueError
+    assert str(e_info.value) == r'Could not find configuration'
