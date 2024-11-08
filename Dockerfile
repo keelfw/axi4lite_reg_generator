@@ -18,6 +18,6 @@ RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction \
     && rm -rf /root/.cache/pypoetry
 
-CMD ["poetry", "run", "pytest"]
+CMD ["poetry", "run", "pytest", "--cov=axi4lite_reg_generator", "--cov-report=xml"]
 
 # docker build -t ghdl-test .
