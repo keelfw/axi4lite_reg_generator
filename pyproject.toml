@@ -10,28 +10,18 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"  # Adjust to your required Python version
-attrs = "24.2.0"
-exceptiongroup = "1.2.2"
-iniconfig = "2.0.0"
-Jinja2 = "3.1.4"
-jsonschema = "4.23.0"
-jsonschema-specifications = "2023.12.1"
-MarkupSafe = "2.1.5"
-packaging = "24.1"
-pluggy = "1.5.0"
-referencing = "0.35.1"
-rpds-py = "0.20.0"
-tomli = "2.0.1"
+python = "^3.9"
+Jinja2 = "^3.1.4"
 schema = "^0.7.7"
 argparse = "^1.4.0"
 
 [tool.poetry.dev-dependencies]
-# You can include other dev dependencies here
-ruff = "0.6.1"
-pytest = "8.3.3"
-cocotb = "1.9.1"
-cocotb-bus = "0.2.1"
+coverage = "^7.3.2"
+pytest-cov = "^4.1.0"
+ruff = "^0.6.1"
+pytest = "^7.4.3"
+cocotb = "^1.9.1"
+cocotb-bus = "^0.2.1"
 cocotb-test = "^0.2.5"
 
 [tool.poetry.scripts]
@@ -43,14 +33,15 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.coverage.run]
 branch = true
-source = ["src"]
+source = ["axi4lite_reg_generator"]
+omit = ["*.vhd", "test/*", "axi4lite_reg_generator/templates/*"]
 
 [tool.coverage.report]
 fail_under = 80
 show_missing = true
 
 [tool.mypy]
-files = "src tests"
+files = "axi4lite_reg_generator tests"
 ignore_missing_imports = true
 
 [tool.ruff.lint]

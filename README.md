@@ -34,6 +34,7 @@ The tool also creates detailed register documentation that can be used in a hard
     "addr_offset" : 64,
     "use_upd_pulse" : true,
     "bits" : [
+      {"field_name" : "reg3", "num_bits" : 3, "default_value" : "0b11"},
       {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff", "description" : "This is my 8 bit field"},
       {"field_name" : "reg4", "num_bits" : 4}
     ]
@@ -91,15 +92,17 @@ Sometimes a single register has more than one meaning. This is useful for combin
 
 ```json
 "bits" : [
-    {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff", "description" : "This is my 8 bit field"},
-    {"field_name" : "reg4", "num_bits" : 4}
+      {"field_name" : "reg3", "num_bits" : 3, "default_value" : "0b11"},
+      {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff", "description" : "This is my 8 bit field"},
+      {"field_name" : "reg4", "num_bits" : 4}
 ]
 ```
 
 Each field has its own unique name, number of bits, and optional default value. Values are inserted into the register starting as MSb. This example results in the bits being placed in the following order
 | field | bits   | default |
 | ----- | ------ | ------- |
-| N/A   | 31..12 | 0       |
+| N/A   | 31..15 | 0       |
+| reg3  | 14..12 | 3       |
 | reg8  | 11..4  | 255     |
 | reg4  | 3..0   | 0       |
 
