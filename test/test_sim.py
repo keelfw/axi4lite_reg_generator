@@ -91,7 +91,7 @@ async def basic_readwrite(dut):
     await ClockCycles(dut.REGS_ACLK, 5)
 
     assert dut.R_Scratch_Register_O.value == 0x1234567A
-    assert dut.R_Register_with_Fields_O.value == 0x00000B11
+    assert dut.R_Register_with_Fields_O.value == 0x00003B11
 
     # Read new values back
     dut._log.info('Reading new values back')
