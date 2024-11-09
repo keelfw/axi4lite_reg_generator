@@ -16,18 +16,16 @@ schema = "^0.7.7"
 argparse = "^1.4.0"
 
 [tool.poetry.dev-dependencies]
-# You can include other dev dependencies here
+coverage = "^7.3.2"
+pytest-cov = "^4.1.0"
 ruff = "^0.6.1"
-pytest = "^8.3.3"
+pytest = "^7.4.3"
 cocotb = "^1.9.1"
 cocotb-bus = "^0.2.1"
 cocotb-test = "^0.2.5"
 
 [tool.poetry.scripts]
 test = "pytest:main"
-
-[tool.poetry.group.dev.dependencies]
-pytest-cov = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -43,7 +41,7 @@ fail_under = 80
 show_missing = true
 
 [tool.mypy]
-files = "src tests"
+files = "axi4lite_reg_generator tests"
 ignore_missing_imports = true
 
 [tool.ruff.lint]
