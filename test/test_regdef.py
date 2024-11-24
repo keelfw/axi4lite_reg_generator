@@ -284,12 +284,12 @@ def test_address_too_large():
         )
 
 
-def test_rtlsim():
+def test_rtlsim_noreg():
     """Test RTL simulation of generated register file.
 
     Tests:
         1. Generates VHDL code
-        2. Runs cocotb simulation
+        2. Runs cocotb simulation with inputs NOT registered
         3. Verifies simulation completes successfully
     """
     reg = axi4lite_reg_generator.RegDef.from_json_file(
@@ -305,6 +305,32 @@ def test_rtlsim():
         toplevel='reg_file',
         module='test.test_sim',
         simulator='ghdl',
+        parameters=dict(REGISTER_INPUTS=False),
+    )
+
+
+def test_rtlsim_reg():
+    """Test RTL simulation of generated register file.
+
+    Tests:
+        1. Generates VHDL code
+        2. Runs cocotb simulation with inputs registered
+        3. Verifies simulation completes successfully
+    """
+    reg = axi4lite_reg_generator.RegDef.from_json_file(
+        os.path.join(test_dir, 'test_json.json')
+    )
+    test_file = os.path.join(test_dir, '_test.vhd')
+    with open(test_file, 'w') as f:
+        f.write(reg.to_vhdl())
+
+    cocotb_test.simulator.run(
+        vhdl_sources=['./test/_test.vhd'],
+        toplevel_lang='vhdl',
+        toplevel='reg_file',
+        module='test.test_sim',
+        simulator='ghdl',
+        parameters=dict(REGISTER_INPUTS=True),
     )
 
 

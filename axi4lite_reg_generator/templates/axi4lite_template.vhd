@@ -102,15 +102,29 @@ architecture rtl of {{ entity_name }} is
 begin
 
   -- Handle inputs
+
+  {% for reg in regs -%}
+  {% if reg['reg_type'] == 'rw' -%}
+    REG_{{ reg['name'] }}_R <= REG_{{ reg['name'] }}_W;
+  {% endif -%}
+  {% endfor %}
+
   reg_inputs_g : if REGISTER_INPUTS generate
-  -- TODO
+    process(REGS_ACLK) is
+    begin
+      if rising_edge(REGS_ACLK) then
+        {% for reg in regs -%}
+        {% if reg['reg_type'] == 'ro' or reg['reg_type'] == 'custom' -%}
+          REG_{{ reg['name'] }}_R <= R_{{ reg['name'] }}_I; 
+        {% endif -%}
+        {% endfor %}
+      end if;
+    end process;
   end generate;
 
   con_inputs_g : if not REGISTER_INPUTS generate
     {% for reg in regs -%}
-    {% if reg['reg_type'] == 'rw' -%}
-      REG_{{ reg['name'] }}_R <= REG_{{ reg['name'] }}_W;
-    {% else -%}
+    {% if reg['reg_type'] != 'rw' -%}
       REG_{{ reg['name'] }}_R <= R_{{ reg['name'] }}_I;
     {% endif -%}
     {% endfor %}
