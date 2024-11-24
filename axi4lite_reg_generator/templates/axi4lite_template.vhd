@@ -76,14 +76,14 @@ architecture rtl of {{ entity_name }} is
   constant AXI_RESP_EXOKAY : std_logic_vector(1 downto 0) := "01";
   constant AXI_RESP_SLVERR : std_logic_vector(1 downto 0) := "10";
   constant AXI_RESP_DECERR : std_logic_vector(1 downto 0) := "11";
-
+  
+  -- Register signal declarations
   {% for reg in regs -%}
-    signal REG_{{ reg['name'] }}_R : std_logic_vector({{ reg['bits']|count_bits-1 }} downto 0);
-    {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
-    signal REG_{{ reg['name'] }}_W : std_logic_vector({{ reg['bits']|count_bits-1 }} downto 0);
-    {% endif %}
+  signal REG_{{ reg['name'] }}_R : std_logic_vector({{ reg['bits']|count_bits-1 }} downto 0);
+  {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
+  signal REG_{{ reg['name'] }}_W : std_logic_vector({{ reg['bits']|count_bits-1 }} downto 0);
+  {% endif -%}
   {% endfor %}
-
   -- internal AXI support signals
   type STATE_WR_T is (RST, WAIT4ADDR, WAIT4DATA, WAIT4RESP);
   signal state_w : STATE_WR_T;
@@ -107,22 +107,22 @@ begin
   end generate;
 
   con_inputs_g : if not REGISTER_INPUTS generate
-  {% for reg in regs -%}
-    {% if reg['reg_type'] == 'rw' %}
+    {% for reg in regs -%}
+    {% if reg['reg_type'] == 'rw' -%}
       REG_{{ reg['name'] }}_R <= REG_{{ reg['name'] }}_W;
-    {% else %}
+    {% else -%}
       REG_{{ reg['name'] }}_R <= R_{{ reg['name'] }}_I;
-    {% endif %}
-  {% endfor %}
+    {% endif -%}
+    {% endfor %}
   end generate;
 
   -- Connect outputs
   {% for reg in regs -%}
-    {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
-      R_{{ reg['name'] }}_O <= REG_{{ reg['name'] }}_W;
-    {% endif %}
+  {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
+    R_{{ reg['name'] }}_O <= REG_{{ reg['name'] }}_W;
+  {% endif -%}
   {% endfor %}
-
+  -- Connect AXI-Lite ready/valid control signals
   REGS_WREADY <= w_ready;
   REGS_RVALID <= r_valid;
 
@@ -203,62 +203,53 @@ begin
   begin
     if rising_edge(REGS_ACLK) then
       if REGS_ARESETN = '0' then
-        {% for reg in regs -%}
-          {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
-            REG_{{ reg['name'] }}_W <= {{ reg|default_val }};
-            {% if reg['use_upd_pulse'] %}
-            R_{{ reg['name'] }}_O_upd <= '0';
-            {% endif %}
-          {% endif %}
-        {% endfor -%}
+        {%- for reg in regs -%}
+        {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
+        REG_{{ reg['name'] }}_W <= {{ reg|default_val }};
+        {%- if reg['use_upd_pulse'] %}
+        R_{{ reg['name'] }}_O_upd <= '0';
+        {%- endif %}
+        {%- endif %}
+        {%- endfor %}
       else
-        {% for reg in regs -%}
-          {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
-          {% if reg['use_upd_pulse'] %}
-          R_{{ reg['name'] }}_O_upd <= '0';
-          {% endif %}
-          {% endif %}
-        {% endfor -%}
+        {%- for reg in regs -%}
+        {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
+        {%- if reg['use_upd_pulse'] %}
+        R_{{ reg['name'] }}_O_upd <= '0';
+        {%- endif %}
+        {%- endif %}
+        {%- endfor %}
         if REGS_WVALID = '1' and w_ready = '1' then
-            {% for reg in regs -%}
-              {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
-                if address_wr = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) then
-                  {% if reg['use_upd_pulse'] %}
-                  R_{{ reg['name'] }}_O_upd <= '1';
-                  {% endif %}
-                  REGS_BRESP <= AXI_RESP_OKAY;
-                  {% for s in range(strobe_size) -%}
-                    {% if 8*s < reg['bits']|count_bits %}
-                      if REGS_WSTRB({{s}}) = '1' then
-                        REG_{{ reg['name'] }}_W({{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }} downto {{ 8*s }}) <= REGS_WDATA({{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }} downto {{ 8*s }});
-                      end if;
-                    {% endif %}
-                  {% endfor -%}
-                  els
-              {%- endif -%}
-            {%- endfor -%}
-            e
-              REGS_BRESP <= AXI_RESP_SLVERR;
+          {% for reg in regs -%}
+          {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
+          if address_wr = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) then
+            {%- if reg['use_upd_pulse'] %}
+            R_{{ reg['name'] }}_O_upd <= '1';
+            {%- endif %}
+            REGS_BRESP <= AXI_RESP_OKAY;
+            {%- for s in range(strobe_size) %}
+            {%- if 8*s < reg['bits']|count_bits %}
+            if REGS_WSTRB({{s}}) = '1' then
+              REG_{{ reg['name'] }}_W({{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }} downto {{ 8*s }}) <= REGS_WDATA({{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }} downto {{ 8*s }});
             end if;
+            {%- endif %}
+            {%- endfor %}
+          els{%- endif -%}{%- endfor -%}e
+            REGS_BRESP <= AXI_RESP_SLVERR;
+          end if;
         end if;
       end if;
     end if;
   end process;
 
   rd_mux <= {% for reg in regs -%}
-    {% if reg['bits']|count_bits != data_size -%}"
-      {%- for i in range(data_size - reg['bits']|count_bits) -%}
-        0
-      {%- endfor -%}" &
-    {%- endif -%}
-    REG_{{ reg['name'] }}_R when address_rd = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) else
-  {% endfor %}
-  (others=>'0');
+    {%- if reg['bits']|count_bits != data_size %}
+    "{%- for i in range(data_size - reg['bits']|count_bits) %}0{%- endfor -%}" & {% endif -%}REG_{{ reg['name'] }}_R when address_rd = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) else {% endfor -%}
+    (others=>'0');
 
   rd_resp <= {% for reg in regs -%}
-    AXI_RESP_OKAY when address_rd = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) else
-  {% endfor %}
-  AXI_RESP_SLVERR;
+    AXI_RESP_OKAY when address_rd = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) else {% endfor -%}
+    AXI_RESP_SLVERR;
 
   read_p : process (REGS_ACLK) is
   begin
