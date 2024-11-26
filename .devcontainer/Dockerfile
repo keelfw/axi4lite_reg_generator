@@ -12,7 +12,7 @@ RUN apt-get -y update && \
     python3-poetry \
     python-is-python3
 
-COPY ./ /reg/
+COPY ../ /reg/
 
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction \

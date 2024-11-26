@@ -1,0 +1,15 @@
+{
+    "name": "axi4lite_reg_generator",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+    },
+    "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "puorc.awesome-vhdl"
+    ],
+    "postCreateCommand": "poetry install --with dev"
+}

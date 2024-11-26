@@ -21,7 +21,7 @@ jobs:
 
     # Step 2: Build Docker image
     - name: Build Docker image
-      run: docker build -t ghdl-test .
+      run: docker build -t ghdl-test .devcontainer
 
     # Step 3: Run tests inside Docker container
     - name: Run tests
