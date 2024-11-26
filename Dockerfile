@@ -1,6 +1,6 @@
 FROM ghdl/ghdl:ubuntu22-mcode
 
-WORKDIR "/reg"
+WORKDIR /reg
 
 RUN apt-get -y update && \
     apt-get install -y \
@@ -8,16 +8,15 @@ RUN apt-get -y update && \
     python3-venv \
     python3-dev \
     python3-pip \
-    python3-virtualenv \
-    python3-poetry \
-    python-is-python3
+    python-is-python3 && \
+    pip install poetry
 
-COPY ./ /reg/
+COPY ../ /reg/
+
+RUN ls /reg
 
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction \
     && rm -rf /root/.cache/pypoetry
 
-CMD ["poetry", "run", "pytest"]
-
-# docker build -t ghdl-test .
+CMD ["sleep", "infinity"]

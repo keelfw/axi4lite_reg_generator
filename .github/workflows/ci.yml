@@ -25,4 +25,4 @@ jobs:
 
     # Step 3: Run tests inside Docker container
     - name: Run tests
-      run: docker run ghdl-test
+      run: docker run ghdl-test poetry run pytest
