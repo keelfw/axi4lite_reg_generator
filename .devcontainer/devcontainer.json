@@ -1,7 +1,7 @@
 {
     "name": "axi4lite_reg_generator",
     "build": {
-        "dockerfile": "Dockerfile"
+        "dockerfile": "../Dockerfile"
     },
     "settings": {
         "terminal.integrated.shell.linux": "/bin/bash"
