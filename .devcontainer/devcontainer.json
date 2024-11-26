@@ -10,5 +10,6 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "puorc.awesome-vhdl"
-    ]
+    ],
+    "postCreateCommand": "apt-get install -y git"
 }
