@@ -1,4 +1,4 @@
--- Copyright (C) 2024 KEELFW
+-- Copyright (C) 2025 KEELFW
 --
 -- This library is free software; you can redistribute it and/or
 -- modify it under the terms of the GNU Lesser General Public
@@ -179,7 +179,7 @@ begin
     end if;
   end process;
 
-  read_ctrl_p : process (REGS_ACLK) is
+  read_fsm_p : process (REGS_ACLK) is
   begin
     if rising_edge(REGS_ACLK) then
       if REGS_ARESETN = '0' then

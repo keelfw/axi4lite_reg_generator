@@ -148,6 +148,21 @@ def test_generate_vhd():
         f.write(reg.to_vhdl())
 
 
+def test_generate_verilog():
+    """Test Verilog code generation and file output.
+
+    Tests:
+        1. Generates Verilog code from register definition
+        2. Writes Verilog code to file
+    """
+    reg = axi4lite_reg_generator.RegDef.from_json_file(
+        os.path.join(test_dir, 'test_json.json')
+    )
+    test_file = os.path.join(test_dir, '_test.v')
+    with open(test_file, 'w') as f:
+        f.write(reg.to_verilog())
+
+
 def test_basic_vhd():
     """Verify generated VHDL code compiles with GHDL.
 

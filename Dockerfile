@@ -8,7 +8,8 @@ RUN apt-get -y update && \
     python3-venv \
     python3-dev \
     python3-pip \
-    python-is-python3 && \
+    python-is-python3 \
+    verilator && \
     pip install poetry
 
 COPY ../ /reg/

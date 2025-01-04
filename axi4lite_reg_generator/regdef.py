@@ -1,4 +1,4 @@
-# Copyright (C) 2024 KEELFW
+# Copyright (C) 2025 KEELFW
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -234,6 +234,14 @@ class RegDef:
             Generated VHDL code as string
         """
         return self._render_template('axi4lite_template.vhd')
+
+    def to_verilog(self) -> str:
+        """Generate Verilog code for register file.
+
+        Returns:
+            Generated Verilog code as string
+        """
+        return self._render_template('axi4lite_template.v')
 
     def to_md(self) -> str:
         """Generate Markdown documentation for register file.
