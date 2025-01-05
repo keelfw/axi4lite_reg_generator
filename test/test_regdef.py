@@ -396,6 +396,56 @@ def test_vhdlsim_reg():
     )
 
 
+def test_verilogsim_noreg():
+    """Test Verilog RTL simulation of generated register file.
+
+    Tests:
+        1. Generates Verilog code
+        2. Runs cocotb simulation with inputs NOT registered
+        3. Verifies simulation completes successfully
+    """
+    reg = axi4lite_reg_generator.RegDef.from_json_file(
+        os.path.join(test_dir, 'test_json.json')
+    )
+    test_file = os.path.join(test_dir, '_test.v')
+    with open(test_file, 'w') as f:
+        f.write(reg.to_verilog())
+
+    cocotb_test.simulator.run(
+        verilog_sources=['./test/_test.v'],
+        toplevel_lang='verilog',
+        toplevel='reg_file',
+        module='test.test_sim',
+        simulator='verilator',
+        parameters=dict(REGISTER_INPUTS=0),
+    )
+
+
+def test_verilogsim_reg():
+    """Test Verilog RTL simulation of generated register file.
+
+    Tests:
+        1. Generates Verilog code
+        2. Runs cocotb simulation with inputs registered
+        3. Verifies simulation completes successfully
+    """
+    reg = axi4lite_reg_generator.RegDef.from_json_file(
+        os.path.join(test_dir, 'test_json.json')
+    )
+    test_file = os.path.join(test_dir, '_test.v')
+    with open(test_file, 'w') as f:
+        f.write(reg.to_verilog())
+
+    cocotb_test.simulator.run(
+        verilog_sources=['./test/_test.v'],
+        toplevel_lang='verilog',
+        toplevel='reg_file',
+        module='test.test_sim',
+        simulator='verilator',
+        parameters=dict(REGISTER_INPUTS=1),
+    )
+
+
 def test_json_output():
     """Test JSON serialization and deserialization of register configuration.
 
