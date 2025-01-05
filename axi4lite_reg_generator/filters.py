@@ -63,5 +63,13 @@ def default_val(reg):
     return default
 
 
+def default_val_v(reg):
+    num_bits = count_bits(reg['bits'])
+    default = default_val(reg)
+    default = f"{num_bits}'b{default[1:-1]}"
+
+    return default
+
+
 def addr_bits_from_data(data_bits):
     return int(math.ceil(math.log2(data_bits / 8)))

@@ -271,6 +271,7 @@ class RegDef:
         j2env.filters['count_bits'] = filters.count_bits
         j2env.filters['get_offset'] = filters.get_offset
         j2env.filters['default_val'] = filters.default_val
+        j2env.filters['default_val_v'] = filters.default_val_v
         j2env.filters['addr_bits_from_data'] = filters.addr_bits_from_data
 
         template = j2env.get_template(template_file)
