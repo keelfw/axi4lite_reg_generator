@@ -17,49 +17,10 @@
 # See LICENSE file for full license details.
 import os
 import axi4lite_reg_generator
-import subprocess
-import cocotb_test.simulator
-import uuid
 import json
 import pytest
 import schema
 from test import test_dir
-
-
-def test_check_ghdl_installed():
-    """Verify GHDL compiler is installed and accessible.
-
-    Tests:
-        1. Checks if GHDL executable exists in system PATH
-        2. Verifies GHDL help command returns successfully
-
-    Raises:
-        AssertionError: If GHDL is not found or returns non-zero exit code
-    """
-    try:
-        assert (
-            subprocess.run(['ghdl', 'help']).returncode == 0
-        ), 'GHDL executable not found in path'
-    except FileNotFoundError:
-        assert False, 'GHDL not found in path'
-
-
-def test_check_verilator_installed():
-    """Verify Verilator compiler is installed and accessible.
-
-    Tests:
-        1. Checks if Verilator executable exists in system PATH
-        2. Verifies Verilator help command returns successfully
-
-    Raises:
-        AssertionError: If Verilator is not found or returns non-zero exit code
-    """
-    try:
-        assert (
-            subprocess.run(['verilator', '--version']).returncode == 0
-        ), 'Verilator executable not found in path'
-    except FileNotFoundError:
-        assert False, 'Verilator not found in path'
 
 
 def test_basic_definition():
@@ -181,62 +142,6 @@ def test_generate_verilog():
         f.write(reg.to_verilog())
 
 
-def test_basic_vhd():
-    """Verify generated VHDL code compiles with GHDL.
-
-    Tests:
-        1. Generates temporary VHDL file with unique name
-        2. Attempts to compile with GHDL
-        3. Verifies compilation succeeds
-
-    Cleanup:
-        Removes temporary VHDL file
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
-    test_file = os.path.join(test_dir, f'_test_{uuid.uuid4().hex}.vhd')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_vhdl())
-    try:
-        x = subprocess.run(['ghdl', '-a', test_file], capture_output=True, text=True)
-    finally:
-        os.remove(test_file)
-    assert x.returncode == 0, (
-        f'VHDL did not successfully compile in GHDL. See file: {test_file}\nError:\n'
-        + x.stderr
-    )
-
-
-def test_basic_verilog():
-    """Verify generated Verilog code compiles with Verilator.
-
-    Tests:
-        1. Generates temporary Verilog file with unique name
-        2. Attempts to compile with Verilator
-        3. Verifies compilation succeeds
-
-    Cleanup:
-        Removes temporary Verilog file
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
-    test_file = os.path.join(test_dir, f'_test_{uuid.uuid4().hex}.v')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_verilog())
-    try:
-        x = subprocess.run(
-            ['verilator', '--lint-only', test_file], capture_output=True, text=True
-        )
-    finally:
-        os.remove(test_file)
-    assert x.returncode == 0, (
-        f'Verilog did not successfully compile in Verilator. See file: {test_file}\nError:\n'
-        + x.stderr
-    )
-
-
 def test_duplicate_address_detection():
     """Test detection of duplicate register addresses.
 
@@ -344,106 +249,6 @@ def test_address_too_large():
             str(e_info.value)
             == f'Register contains too many bits (name: {too_long_reg["name"]}, bits: 33 > 32)'
         )
-
-
-def test_vhdlsim_noreg():
-    """Test VHDL RTL simulation of generated register file.
-
-    Tests:
-        1. Generates VHDL code
-        2. Runs cocotb simulation with inputs NOT registered
-        3. Verifies simulation completes successfully
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
-    test_file = os.path.join(test_dir, '_test.vhd')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_vhdl())
-
-    cocotb_test.simulator.run(
-        vhdl_sources=['./test/_test.vhd'],
-        toplevel_lang='vhdl',
-        toplevel='reg_file',
-        module='test.test_sim',
-        simulator='ghdl',
-        parameters=dict(REGISTER_INPUTS=False),
-    )
-
-
-def test_vhdlsim_reg():
-    """Test VHDL RTL simulation of generated register file.
-
-    Tests:
-        1. Generates VHDL code
-        2. Runs cocotb simulation with inputs registered
-        3. Verifies simulation completes successfully
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
-    test_file = os.path.join(test_dir, '_test.vhd')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_vhdl())
-
-    cocotb_test.simulator.run(
-        vhdl_sources=['./test/_test.vhd'],
-        toplevel_lang='vhdl',
-        toplevel='reg_file',
-        module='test.test_sim',
-        simulator='ghdl',
-        parameters=dict(REGISTER_INPUTS=True),
-    )
-
-
-def test_verilogsim_noreg():
-    """Test Verilog RTL simulation of generated register file.
-
-    Tests:
-        1. Generates Verilog code
-        2. Runs cocotb simulation with inputs NOT registered
-        3. Verifies simulation completes successfully
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
-    test_file = os.path.join(test_dir, '_test.v')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_verilog())
-
-    cocotb_test.simulator.run(
-        verilog_sources=['./test/_test.v'],
-        toplevel_lang='verilog',
-        toplevel='reg_file',
-        module='test.test_sim',
-        simulator='verilator',
-        parameters=dict(REGISTER_INPUTS=0),
-    )
-
-
-def test_verilogsim_reg():
-    """Test Verilog RTL simulation of generated register file.
-
-    Tests:
-        1. Generates Verilog code
-        2. Runs cocotb simulation with inputs registered
-        3. Verifies simulation completes successfully
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
-    test_file = os.path.join(test_dir, '_test.v')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_verilog())
-
-    cocotb_test.simulator.run(
-        verilog_sources=['./test/_test.v'],
-        toplevel_lang='verilog',
-        toplevel='reg_file',
-        module='test.test_sim',
-        simulator='verilator',
-        parameters=dict(REGISTER_INPUTS=1),
-    )
 
 
 def test_json_output():

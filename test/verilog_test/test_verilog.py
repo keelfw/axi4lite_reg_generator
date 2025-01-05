@@ -20,9 +20,6 @@ import axi4lite_reg_generator
 import subprocess
 import cocotb_test.simulator
 import uuid
-import json
-import pytest
-import schema
 from test import test_dir
 
 
