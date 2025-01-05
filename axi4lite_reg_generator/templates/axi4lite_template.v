@@ -17,13 +17,6 @@
 * See LICENSE file for full license details.
 */
 
-/*
-TODO: 
-* Register signal declarations (wire vs reg)
-* Port VHDL code at the end of this file to Verilog
-* Check all syntax and other assign misses
-*/
-
 // Data Size = {{ data_size }}
 // Write Strobe Size = {{ strobe_size }}
 
@@ -42,13 +35,13 @@ module {{ entity_name }} #(
   {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
   output wire [{{ reg['bits']|count_bits - 1 }}:0] R_{{ reg['name'] }}_O,
   {% if reg['use_upd_pulse'] -%}
-  output wire R_{{ reg['name'] }}_O_upd,
+  output reg R_{{ reg['name'] }}_O_upd,
   {% endif -%}
   {% endif -%}
   {% endfor %}  
   // Write Address Channel
   input  wire                        REGS_AWVALID,
-  output wire                        REGS_AWREADY,
+  output reg                         REGS_AWREADY,
   input  wire [ADDRESS_W-1:0]        REGS_AWADDR,
   input  wire [2:0]                  REGS_AWPROT,
   // Write Data Channel
@@ -57,19 +50,19 @@ module {{ entity_name }} #(
   input  wire [31:0]                 REGS_WDATA,
   input  wire [3:0]                  REGS_WSTRB,
   // Write Response Channel
-  output wire                        REGS_BVALID,
+  output reg                         REGS_BVALID,
   input  wire                        REGS_BREADY,
-  output wire [1:0]                  REGS_BRESP,
+  output reg  [1:0]                  REGS_BRESP,
   // Read Address Channel
   input  wire                        REGS_ARVALID,
-  output wire                        REGS_ARREADY,
+  output reg                         REGS_ARREADY,
   input  wire [ADDRESS_W-1:0]        REGS_ARADDR,
   input  wire [2:0]                  REGS_ARPROT,
   // Read Data Channel
   output wire                        REGS_RVALID,
   input  wire                        REGS_RREADY,
-  output wire [31:0]                 REGS_RDATA,
-  output wire [1:0]                  REGS_RRESP
+  output reg  [31:0]                 REGS_RDATA,
+  output reg  [1:0]                  REGS_RRESP
 );
 
 localparam [1:0] AXI_RESP_OKAY   = 2'b00;
@@ -78,7 +71,12 @@ localparam [1:0] AXI_RESP_SLVERR = 2'b10;
 localparam [1:0] AXI_RESP_DECERR = 2'b11;
 
 // Register signal declarations
-// TODO: this
+{% for reg in regs -%}
+wire [{{ reg['bits']|count_bits-1}}:0] REG_{{ reg['name'] }}_R;
+{% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
+reg [{{ reg['bits']|count_bits-1 }}:0] REG_{{ reg['name'] }}_W;
+{% endif %}
+{% endfor %}
 
 // Internal AXI support signals
 // Write state machine states
@@ -216,7 +214,7 @@ always @(posedge REGS_ACLK) begin
   if (!REGS_ARESETN) begin
     {%- for reg in regs -%}
     {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
-    REG_{{ reg['name'] }}_W <= {{ reg|default_val }};
+    REG_{{ reg['name'] }}_W <= {{ reg|default_val_v }};
     {%- if reg['use_upd_pulse'] %}
     R_{{ reg['name'] }}_O_upd <= 1'b0;
     {%- endif %}
@@ -233,7 +231,7 @@ always @(posedge REGS_ACLK) begin
     {%- endfor %}
     if (REGS_WVALID == 1'b1 && w_ready == 1'b1) begin
       {% for reg in regs -%}
-      {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
+      {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
       if (address_wr == {{ reg['addr_offset'] }}) begin
         {%- if reg['use_upd_pulse'] %}
         R_{{ reg['name'] }}_O_upd <= 1'b1;
@@ -246,36 +244,41 @@ always @(posedge REGS_ACLK) begin
         end
         {%- endif %}
         {%- endfor %}
-      end else {%- endif -%}{%- endfor -%} begin
+      end else {% endif -%}{% endfor -%} begin
         REGS_BRESP <= AXI_RESP_SLVERR;
       end
     end
   end
 end
 
-/*
+always @* begin
+  case (address_rd)
+    {% for reg in regs -%}
+    {{ reg['addr_offset'] }}: begin
+      {% if reg['bits']|count_bits < data_size %}
+      rd_mux = {{'{ {'}}{{ data_size - reg['bits']|count_bits }}{1'b0{{'}}'}}, REG_{{ reg['name'] }}_R };
+      {% else %}
+      rd_mux = REG_{{ reg['name'] }}_R;
+      {% endif %}
+      rd_resp = AXI_RESP_OKAY;
+    end
+    {% endfor %}
+    default: begin
+      rd_mux = 0;
+      rd_resp = AXI_RESP_SLVERR;
+    end
+  endcase
+end
 
-  rd_mux <= {% for reg in regs -%}
-    {%- if reg['bits']|count_bits != data_size %}
-    "{%- for i in range(data_size - reg['bits']|count_bits) %}0{%- endfor -%}" & {% endif -%}REG_{{ reg['name'] }}_R when address_rd = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) else {% endfor -%}
-    (others=>'0');
-
-  rd_resp <= {% for reg in regs -%}
-    AXI_RESP_OKAY when address_rd = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) else {% endfor -%}
-    AXI_RESP_SLVERR;
-
-  read_p : process (REGS_ACLK) is
-  begin
-    if rising_edge(REGS_ACLK) then
-      if REGS_ARESETN = '0' then
-      else
-        if state_r = WAITREG then
-          REGS_RDATA <= rd_mux;
-          REGS_RRESP <= rd_resp;
-        end if;
-      end if;
-    end if;
-  end process;
-*/
+// Read process
+always @(posedge REGS_ACLK) begin
+  if (!REGS_ARESETN) begin
+  end else begin
+    if (state_r == R_STATE_WAITREG) begin
+      REGS_RDATA <= rd_mux;
+      REGS_RRESP <= rd_resp;
+    end
+  end
+end
 
 endmodule
