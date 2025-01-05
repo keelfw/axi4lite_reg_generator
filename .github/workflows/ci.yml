@@ -41,7 +41,7 @@ jobs:
       run: docker build -t ghdl-test -f Dockerfile.ghdl .
 
     - name: Run tests
-      run: docker run ghdl-test poetry run pytest tests/vhdl_test/
+      run: docker run ghdl-test poetry run pytest test/vhdl_test/
 
   test_verilog:
     runs-on: ubuntu-latest
@@ -54,4 +54,4 @@ jobs:
       run: docker build -t verilator-test -f Dockerfile.verilator .
 
     - name: Run tests
-      run: docker run verilator-test poetry run pytest tests/verilog_test/
+      run: docker run verilator-test poetry run pytest test/verilog_test/
