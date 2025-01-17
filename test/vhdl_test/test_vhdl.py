@@ -20,7 +20,9 @@ import axi4lite_reg_generator
 import subprocess
 import cocotb_test.simulator
 import uuid
-from test import test_dir
+
+test_dir = os.path.join(os.path.dirname(__file__), '..')
+json_file_path = os.path.join(test_dir, 'test_json.json')
 
 
 def test_check_ghdl_installed():
@@ -52,9 +54,7 @@ def test_basic_vhd():
     Cleanup:
         Removes temporary VHDL file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, f'_test_{uuid.uuid4().hex}.vhd')
     with open(test_file, 'w') as f:
         f.write(reg.to_vhdl())
@@ -76,9 +76,7 @@ def test_vhdlsim_noreg():
         2. Runs cocotb simulation with inputs NOT registered
         3. Verifies simulation completes successfully
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, '_test.vhd')
     with open(test_file, 'w') as f:
         f.write(reg.to_vhdl())
@@ -101,9 +99,7 @@ def test_vhdlsim_reg():
         2. Runs cocotb simulation with inputs registered
         3. Verifies simulation completes successfully
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, '_test.vhd')
     with open(test_file, 'w') as f:
         f.write(reg.to_vhdl())

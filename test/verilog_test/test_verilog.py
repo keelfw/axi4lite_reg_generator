@@ -20,7 +20,9 @@ import axi4lite_reg_generator
 import subprocess
 import cocotb_test.simulator
 import uuid
-from test import test_dir
+
+test_dir = os.path.join(os.path.dirname(__file__), '..')
+json_file_path = os.path.join(test_dir, 'test_json.json')
 
 
 def test_check_verilator_installed():
@@ -52,9 +54,7 @@ def test_basic_verilog():
     Cleanup:
         Removes temporary Verilog file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, f'_test_{uuid.uuid4().hex}.v')
     with open(test_file, 'w') as f:
         f.write(reg.to_verilog())
@@ -78,9 +78,7 @@ def test_verilogsim_noreg():
         2. Runs cocotb simulation with inputs NOT registered
         3. Verifies simulation completes successfully
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, '_test.v')
     with open(test_file, 'w') as f:
         f.write(reg.to_verilog())
@@ -103,9 +101,7 @@ def test_verilogsim_reg():
         2. Runs cocotb simulation with inputs registered
         3. Verifies simulation completes successfully
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, '_test.v')
     with open(test_file, 'w') as f:
         f.write(reg.to_verilog())
