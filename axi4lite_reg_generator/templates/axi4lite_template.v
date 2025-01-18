@@ -72,7 +72,7 @@ localparam [1:0] AXI_RESP_DECERR = 2'b11;
 
 // Register signal declarations
 {% for reg in regs -%}
-wire [{{ reg['bits']|count_bits-1}}:0] REG_{{ reg['name'] }}_R;
+reg [{{ reg['bits']|count_bits-1}}:0] REG_{{ reg['name'] }}_R;
 {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
 reg [{{ reg['bits']|count_bits-1 }}:0] REG_{{ reg['name'] }}_W;
 {% endif %}
@@ -112,7 +112,7 @@ reg [1:0] rd_resp;
 {% endfor %}
 
 generate
-  if (REGISTER_INPUTS) begin : reg_inputs_g
+  if (REGISTER_INPUTS > 0) begin : reg_inputs_g
     always @(posedge REGS_ACLK) begin
       {% for reg in regs -%}
       {% if reg['reg_type'] == 'ro' or reg['reg_type'] == 'custom' -%}
@@ -143,27 +143,36 @@ assign REGS_RVALID = r_valid;
 always @(posedge REGS_ACLK) begin
   if (!REGS_ARESETN) begin
     state_w <= W_STATE_RST;
-    REGS_AWREADY <= 1'b0;
-    w_ready <= 1'b0;
-    REGS_BVALID <= 1'b0;
+    REGS_AWREADY <= 0;
+    w_ready <= 0;
+    REGS_BVALID <= 0;
   end
   else begin
     case (state_w)
       W_STATE_RST: begin
         state_w <= W_STATE_WAIT4ADDR;
-        REGS_AWREADY <= 1'b1;
+        REGS_AWREADY <= 1;
       end
       W_STATE_WAIT4ADDR: begin
-        state_w <= W_STATE_WAIT4DATA;
-        REGS_AWREADY <= 1'b0;
-        w_ready <= 1'b1;
-        address_wr <= REGS_AWADDR[ADDRESS_APERTURE-1:0];
+        if (REGS_AWVALID) begin
+          state_w <= W_STATE_WAIT4DATA;
+          REGS_AWREADY <= 0;
+          w_ready <= 1;
+          address_wr <= REGS_AWADDR[ADDRESS_APERTURE-1:0];
+        end
+      end
+      W_STATE_WAIT4DATA: begin
+        if (REGS_WVALID) begin
+          state_w <= W_STATE_WAIT4RESP;
+          w_ready <= 0;
+          REGS_BVALID <= 1;
+        end
       end
       W_STATE_WAIT4RESP: begin
-        if (REGS_BREADY == 1'b1) begin
+        if (REGS_BREADY) begin
           state_w <= W_STATE_WAIT4ADDR;
-          REGS_BVALID <= 1'b1;
-          REGS_AWREADY <= 1'b1;
+          REGS_BVALID <= 1;
+          REGS_AWREADY <= 1;
         end
       end
       default: begin
@@ -177,29 +186,31 @@ end
 always @(posedge REGS_ACLK) begin
   if (!REGS_ARESETN) begin
     state_r <= R_STATE_RST;
-    REGS_ARREADY <= 1'b0;
-    r_valid <= 1'b0;
+    REGS_ARREADY <= 0;
+    r_valid <= 0;
   end
   else begin
     case (state_r)
       R_STATE_RST: begin
         state_r <= R_STATE_WAIT4ADDR;
-        REGS_ARREADY <= 1'b1;
+        REGS_ARREADY <= 1;
       end
       R_STATE_WAIT4ADDR: begin
-        state_r <= R_STATE_WAITREG;
-        REGS_ARREADY <= 1'b0;
-        address_rd <= REGS_ARADDR[ADDRESS_APERTURE-1:0];
+        if (REGS_ARVALID) begin
+          state_r <= R_STATE_WAITREG;
+          REGS_ARREADY <= 0;
+          address_rd <= REGS_ARADDR[ADDRESS_APERTURE-1:0];
+        end
       end
       R_STATE_WAITREG: begin
         state_r <= R_STATE_WAIT4DATA;
-        r_valid <= 1'b1;
+        r_valid <= 1;
       end
       R_STATE_WAIT4DATA: begin
-        if (REGS_RREADY == 1'b1) begin
+        if (REGS_RREADY == 1) begin
           state_r <= R_STATE_WAIT4ADDR;
-          r_valid <= 1'b0;
-          REGS_ARREADY <= 1'b1;
+          r_valid <= 0;
+          REGS_ARREADY <= 1;
         end
       end
       default: begin
@@ -216,7 +227,7 @@ always @(posedge REGS_ACLK) begin
     {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
     REG_{{ reg['name'] }}_W <= {{ reg|default_val_v }};
     {%- if reg['use_upd_pulse'] %}
-    R_{{ reg['name'] }}_O_upd <= 1'b0;
+    R_{{ reg['name'] }}_O_upd <= 0;
     {%- endif %}
     {%- endif %}
     {%- endfor %}
@@ -225,21 +236,21 @@ always @(posedge REGS_ACLK) begin
     {%- for reg in regs -%}
     {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
     {%- if reg['use_upd_pulse'] %}
-    R_{{ reg['name'] }}_O_upd <= 1'b0;
+    R_{{ reg['name'] }}_O_upd <= 0;
     {%- endif %}
     {%- endif %}
     {%- endfor %}
-    if (REGS_WVALID == 1'b1 && w_ready == 1'b1) begin
+    if (REGS_WVALID && w_ready) begin
       {% for reg in regs -%}
       {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
       if (address_wr == {{ reg['addr_offset'] }}) begin
         {%- if reg['use_upd_pulse'] %}
-        R_{{ reg['name'] }}_O_upd <= 1'b1;
+        R_{{ reg['name'] }}_O_upd <= 1;
         {%- endif %}
         REGS_BRESP <= AXI_RESP_OKAY;
         {%- for s in range(strobe_size) %}
         {%- if 8*s < reg['bits']|count_bits %}
-        if (REGS_WSTRB[{{s}}] == 1'b1) begin
+        if (REGS_WSTRB[{{s}}] == 1) begin
           REG_{{ reg['name'] }}_W[{{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }}:{{ 8*s }}] <= REGS_WDATA[{{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }}:{{ 8*s }}];
         end
         {%- endif %}
@@ -282,3 +293,4 @@ always @(posedge REGS_ACLK) begin
 end
 
 endmodule
+
