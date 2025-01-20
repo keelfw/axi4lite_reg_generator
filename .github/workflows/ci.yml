@@ -53,4 +53,4 @@ jobs:
       run: docker build -t verilator-test -f Dockerfile.verilator .
 
     - name: Run tests
-      run: docker run --entrypoint=poetry verilator run pytest test/test_regdef.py test/test_argparse.py test/test_verilog.py
+      run: docker run --entrypoint=poetry verilator-test run pytest test/test_regdef.py test/test_argparse.py test/test_verilog.py
