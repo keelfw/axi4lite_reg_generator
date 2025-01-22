@@ -315,13 +315,13 @@ def test_basic_heirarchy():
 
     # Check each register's address, name and type
     for i, cfg in enumerate(reg._cfg):
-        assert (
-            cfg['addr_offset'] == expected_addresses[i]
-        ), f"Wrong address for {cfg['name']}"
-        assert (
-            cfg['name'] == expected_names[i]
-        ), f"Wrong name at address {cfg['addr_offset']}"
-        assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"
+        assert cfg['addr_offset'] == expected_addresses[i], (
+            f'Wrong address for {cfg["name"]}'
+        )
+        assert cfg['name'] == expected_names[i], (
+            f'Wrong name at address {cfg["addr_offset"]}'
+        )
+        assert cfg['reg_type'] == expected_types[i], f'Wrong type for {cfg["name"]}'
 
 
 def test_heirarchy_separator():
@@ -371,13 +371,13 @@ def test_heirarchy_separator():
 
     # Check each register's address, name and type
     for i, cfg in enumerate(reg._cfg):
-        assert (
-            cfg['addr_offset'] == expected_addresses[i]
-        ), f"Wrong address for {cfg['name']}"
-        assert (
-            cfg['name'] == expected_names[i]
-        ), f"Wrong name at address {cfg['addr_offset']}"
-        assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"
+        assert cfg['addr_offset'] == expected_addresses[i], (
+            f'Wrong address for {cfg["name"]}'
+        )
+        assert cfg['name'] == expected_names[i], (
+            f'Wrong name at address {cfg["addr_offset"]}'
+        )
+        assert cfg['reg_type'] == expected_types[i], f'Wrong type for {cfg["name"]}'
 
 
 def test_missing_config():

@@ -36,9 +36,9 @@ def test_check_ghdl_installed():
         AssertionError: If GHDL is not found or returns non-zero exit code
     """
     try:
-        assert (
-            subprocess.run(['ghdl', 'help']).returncode == 0
-        ), 'GHDL executable not found in path'
+        assert subprocess.run(['ghdl', 'help']).returncode == 0, (
+            'GHDL executable not found in path'
+        )
     except FileNotFoundError:
         assert False, 'GHDL not found in path'
 

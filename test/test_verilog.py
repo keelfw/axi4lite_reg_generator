@@ -36,9 +36,9 @@ def test_check_verilator_installed():
         AssertionError: If Verilator is not found or returns non-zero exit code
     """
     try:
-        assert (
-            subprocess.run(['verilator', '--version']).returncode == 0
-        ), 'Verilator executable not found in path'
+        assert subprocess.run(['verilator', '--version']).returncode == 0, (
+            'Verilator executable not found in path'
+        )
     except FileNotFoundError:
         assert False, 'Verilator not found in path'
 
