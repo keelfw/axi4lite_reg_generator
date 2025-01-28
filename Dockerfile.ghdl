@@ -13,10 +13,12 @@ RUN apt-get -y update && \
 
 COPY ./ /reg/
 
-RUN ls /reg
-
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction \
     && rm -rf /root/.cache/pypoetry
 
 CMD ["sleep", "infinity"]
+
+# To run in interactive mode:
+# $ docker build -t ghdl -f Dockerfile.ghdl .
+# $ docker run -it --entrypoint=/bin/bash -v .:/reg ghdl

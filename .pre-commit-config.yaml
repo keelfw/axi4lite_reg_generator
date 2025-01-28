@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.2
+    rev: v0.9.3
     hooks:
       - id: ruff
       - id: ruff-format
@@ -10,7 +10,7 @@ repos:
         name: Create Examples
         entry: >
           bash -c "
-          python -m axi4lite_reg_generator test/test_json.json --output example/outputs/example.vhd &&
+          poetry run python -m axi4lite_reg_generator example/inputs/example.json --output example/outputs/example &&
           git add example/outputs/* example/inputs/*
           "
         language: system

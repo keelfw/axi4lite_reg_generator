@@ -1,7 +1,10 @@
 [
   {
     "config" : {
-      "data_size" : 32
+      "data_size" : 32,
+      "include_username" : false,
+      "include_hostname" : false,
+      "include_timestamp" : false
     }
   },
   {

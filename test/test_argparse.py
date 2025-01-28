@@ -28,59 +28,50 @@ def test_bad_file(capsys):
     """
     Test that files that do not exist are reported.
     """
-    sys.argv = ['', '_bad_.json']
+    sys.argv = ['', '_bad_.json', '-o', '_this_should_not_exist']
 
     with pytest.raises(SystemExit):
         main()
 
     assert capsys.readouterr().err == 'File does not exist: _bad_.json\n'
+    assert not os.path.exists('_this_should_not_exist.vhd')
 
 
 def test_outputs_exist():
     """
     Test that the expected output files get created
     """
-    vhd_file = os.path.join(test_dir, '_test_outputs_exist.vhd')
-    md_file = os.path.join(test_dir, '_test_outputs_exist.md')
+    out_file_base = os.path.join(test_dir, '_test_outputs_exist')
+    expected_extensions = ('.vhd', '.v', '.md')
 
-    if os.path.exists(vhd_file):
-        os.remove(vhd_file)
-    if os.path.exists(md_file):
-        os.remove(md_file)
+    for ext in expected_extensions:
+        if os.path.exists(out_file := out_file_base + ext):
+            os.remove(out_file)
 
-    sys.argv = ['', json_file_path, '-o', vhd_file]
+    sys.argv = ['', json_file_path, '-o', out_file_base]
     main()
 
-    # Check whether files were written
-    assert os.path.exists(vhd_file)
-    assert os.path.exists(md_file)
-
-    # Ensure that files contain some content
-    assert os.stat(vhd_file).st_size > 10
-    assert os.stat(md_file).st_size > 10
-
-    # Cleanup
-    os.remove(vhd_file)
-    os.remove(md_file)
+    for ext in expected_extensions:
+        # Check whether files were written
+        assert os.path.exists(out_file := out_file_base + ext)
+        # Ensure that files contain some content
+        assert os.stat(out_file).st_size > 10
+        # Cleanup
+        os.remove(out_file)
 
 
-def test_compare_file_to_stdout(capsys):
-    """
-    Test that the vhdl that gets dumped to stdout is the same as the vhdl that gets stored to a file.
-    """
-    sys.argv = ['', json_file_path]
-    main()
-    stdout = capsys.readouterr().out
+def test_specify_extension():
+    out_file_base = os.path.join(test_dir, '_test_specify_extension')
+    expected_extensions = ('.vhd', '.v', '.md')
 
-    tmp_vhd_out_file = os.path.join(test_dir, 'deleteme.vhd')
-    sys.argv += ['-o', tmp_vhd_out_file]
-    main()
+    for ext in expected_extensions:
+        if os.path.exists(out_file := out_file_base + ext):
+            os.remove(out_file)
 
-    with open(tmp_vhd_out_file, 'r') as f_in:
-        file_data = f_in.read()
+    for ext in expected_extensions:
+        sys.argv = ['', json_file_path, '-o', out_file_base + ext]
+        with pytest.raises(SystemExit):
+            main()
 
-    # Skip the last character because a final \n will be present
-    assert stdout[:-1] == file_data
-
-    os.remove(tmp_vhd_out_file)
-    os.remove(os.path.splitext(tmp_vhd_out_file)[0] + '.md')
+        # Check whether files were written
+        assert not os.path.exists(out_file_base + ext)
