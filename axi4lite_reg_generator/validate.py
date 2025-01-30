@@ -17,23 +17,18 @@
 # See LICENSE file for full license details.
 import argparse
 import hashlib
+import os
 import re
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        prog='AXI4Lite Register Generator Hash Validator',
-        description='Verify hash of generated output',
-    )
 
-    parser.add_argument(
-        'files', type=str, nargs='+', help='Path(s) to generated file(s)'
-    )
-
-    args = parser.parse_args()
-
+def validate(*args):
     hash_pass = True
-    for file in args.files:
+    for file in args:
         # Read the file
+        if not os.path.exists(file):
+            print(f'ERROR: file does not exist: {file}')
+            hash_pass = False
+            continue
         with open(file, 'r', encoding='utf-8') as f:
             data = f.read()
 
@@ -61,5 +56,19 @@ if __name__ == '__main__':
             hash_pass = False
         else:
             print(f'Hash for file {file} is valid')
+    return not hash_pass
 
-    exit(not hash_pass)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        prog='AXI4Lite Register Generator Hash Validator',
+        description='Verify hash of generated output',
+    )
+
+    parser.add_argument(
+        'files', type=str, nargs='+', help='Path(s) to generated file(s)'
+    )
+
+    args = parser.parse_args()
+
+    exit(validate(*args.files))
