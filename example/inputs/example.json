@@ -1,0 +1,37 @@
+[
+  {
+    "config" : {
+      "data_size" : 32,
+      "include_username" : false,
+      "include_hostname" : false,
+      "include_timestamp" : false
+    }
+  },
+  {
+    "name" : "Test_Register",
+    "description" : "This is a test register",
+    "bits" : 32
+  },
+  {
+    "name" : "Scratch_Register",
+    "description" : "This is a scratch register",
+    "reg_type" : "rw",
+    "use_upd_pulse" : true,
+    "bits" : {
+      "num_bits" : 32,
+      "default_value" : 0
+    }
+  },
+  {
+    "name" : "Register_with_Fields",
+    "description" : "This register has fields",
+    "reg_type" : "custom",
+    "addr_offset" : 64,
+    "use_upd_pulse" : true,
+    "bits" : [
+      {"field_name" : "reg3", "num_bits" : 3, "default_value" : "0b11"},
+      {"field_name" : "reg8", "num_bits" : 8, "default_value" : "0xff", "description" : "This is my 8 bit field"},
+      {"field_name" : "reg4", "num_bits" : 4}
+    ]
+  }
+]

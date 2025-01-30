@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "axi4lite_reg_generator"
-version = "0.1.0"
+version = "0.2.0"
 description = "Template based VHDL register generator"
 authors = ["Kyle O'Brien <kyle@keelfw.com>"]
 license = "lgpl"
@@ -15,17 +15,18 @@ Jinja2 = "^3.1.4"
 schema = "^0.7.7"
 argparse = "^1.4.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.scripts]
+test = "pytest:main"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.1.0"
+ruff = "^0.9.3"
 coverage = "^7.3.2"
 pytest-cov = "^4.1.0"
-ruff = "^0.6.1"
 pytest = "^7.4.3"
 cocotb = "^1.9.1"
 cocotb-bus = "^0.2.1"
 cocotb-test = "^0.2.5"
-
-[tool.poetry.scripts]
-test = "pytest:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -1,5 +1,5 @@
 # axi4lite_reg_generator
-Python tool to generate a VHDL register file with an AXI4-Lite interface from JSON.
+Python tool to generate a VHDL and Verilog register file with an AXI4-Lite interface from JSON.
 
 The tool also creates detailed register documentation that can be used in a hardware / software ICD.
 
@@ -107,7 +107,7 @@ Each field has its own unique name, number of bits, and optional default value. 
 | reg4  | 3..0   | 0       |
 
 # Automated Documentation
-When creating the register file, a markdown file with the register configuration is also created. This file will have the same name as the specified output `.vhd` file but will have a `.md` extension.
+When creating the register file, a markdown file with the register configuration is also created. This file will be saved in the same output directory as the VHDL and Verilog files.
 
 # Heirarchy
 
@@ -158,9 +158,9 @@ This results in a register map with `Heir_Register_Top` at address 0 and heirarc
 When using heirarchy, the subordinate heirarchical names are prepended with the parent names. By default, they are separated using the `_` character, but this can be changed in the configuration by setting the `instance_separator` value. Prepending the parent prevents naming conflicts in the generated RTL.
 
 # Instructions to Create Register File
-In a simple example, if you have the json file shown in the example above saved as `my_regs.json`, type the following into the command prompt to create `my_regs.vhd` and `my_regs.md`.
+In a simple example, if you have the json file shown in the example above saved as `my_regs.json`, type the following into the command prompt to create `my_regs.vhd`, `my_regs.v`, and `my_regs.md`.
 ```bash
-$ python -m axi4lite_reg_generator my_regs.json -o my_regs.vhd
+$ python -m axi4lite_reg_generator my_regs.json -o my_regs
 ```
 
 To see the full list of usage options, type the following command into the command prompt.
@@ -171,9 +171,9 @@ $ python -m axi4lite_reg_generator --help
 
 This results in the following usage information:
 ```
-usage: AXI4Lite Register Generator [-h] [-o OUTPUT] json_input
+usage: AXI4Lite Register Generator [-h] -o OUTPUT json_input
 
-Generate a VHDL register file with an AXI4-Lite interface from JSON
+Generate a VHDL and Verilog register file with an AXI4-Lite interface from JSON
 
 positional arguments:
   json_input            Register configuration JSON file
@@ -181,5 +181,5 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -o OUTPUT, --output OUTPUT
-                        Save output to file
+                        Output save base file name
 ```

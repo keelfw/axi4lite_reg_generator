@@ -31,12 +31,12 @@ def report_file_exists(file: str) -> bool:
 def main():
     parser = argparse.ArgumentParser(
         prog='AXI4Lite Register Generator',
-        description='Generate a VHDL register file with an AXI4-Lite interface from JSON',
+        description='Generate a VHDL and Verilog register file with an AXI4-Lite interface from JSON',
     )
 
     parser.add_argument('json_input', type=str, help='Register configuration JSON file')
     parser.add_argument(
-        '-o', '--output', type=str, required=False, help='Save output to file'
+        '-o', '--output', type=str, required=True, help='Output save base file name'
     )
 
     args = parser.parse_args()
@@ -46,14 +46,23 @@ def main():
 
     regs = regdef.RegDef.from_json_file(args.json_input)
 
-    if args.output is None:
-        print(regs.to_vhdl())
-    else:
-        with open(args.output, 'w') as f_out:
-            f_out.write(regs.to_vhdl())
-        documentation_file = os.path.splitext(args.output)[0] + '.md'
-        with open(documentation_file, 'w') as f_out:
-            f_out.write(regs.to_md())
+    if os.path.splitext(args.output)[1] in ('.vhd', '.v', '.md'):
+        print(
+            'ERROR: Output file name should not include an extension. Continuing...',
+            file=sys.stderr,
+        )
+        args.output = os.path.splitext(args.output)[0]
+        exit(-1)
+
+    with open(fname := (args.output + '.vhd'), 'w') as f_out:
+        print(f'Writing VHDL to: {fname}')
+        f_out.write(regs.to_vhdl())
+    with open(fname := (args.output + '.v'), 'w') as f_out:
+        print(f'Writing Verilog to: {fname}')
+        f_out.write(regs.to_verilog())
+    with open(fname := (args.output + '.md'), 'w') as f_out:
+        print(f'Writing Documentation to: {fname}')
+        f_out.write(regs.to_md())
 
 
 if __name__ == '__main__':

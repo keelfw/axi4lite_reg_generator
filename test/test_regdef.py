@@ -17,31 +17,12 @@
 # See LICENSE file for full license details.
 import os
 import axi4lite_reg_generator
-import subprocess
-import cocotb_test.simulator
-import uuid
 import json
 import pytest
 import schema
-from test import test_dir
 
-
-def test_check_ghdl_installed():
-    """Verify GHDL compiler is installed and accessible.
-
-    Tests:
-        1. Checks if GHDL executable exists in system PATH
-        2. Verifies GHDL help command returns successfully
-
-    Raises:
-        AssertionError: If GHDL is not found or returns non-zero exit code
-    """
-    try:
-        assert (
-            subprocess.run(['ghdl', 'help']).returncode == 0
-        ), 'GHDL executable not found in path'
-    except FileNotFoundError:
-        assert False, 'GHDL not found in path'
+test_dir = os.path.dirname(__file__)
+json_file_path = os.path.join(test_dir, 'test_json.json')
 
 
 def test_basic_definition():
@@ -51,9 +32,7 @@ def test_basic_definition():
         1. Loads register definition from JSON file
         2. Verifies VHDL can be generated without errors
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
     print(reg.to_vhdl())
 
 
@@ -64,9 +43,7 @@ def test_default_values():
         1. Checks register type is set to 'ro' for first register
         2. Verifies default value is 0 for specific bit field
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
 
     assert reg._cfg[0]['reg_type'] == 'ro'
     assert reg._cfg[2]['bits'][2]['default_value'] == 0
@@ -86,8 +63,7 @@ def test_bad_default_values():
     default_to_try = [18, 'hello', (1,)]
 
     for idx, default_value in enumerate(default_to_try):
-        json_file = os.path.join(test_dir, 'test_json.json')
-        with open(json_file, 'r') as f:
+        with open(json_file_path, 'r') as f:
             json_string = f.read()
         cfg = json.loads(json_string)
         cfg.append(
@@ -109,9 +85,7 @@ def test_numeric_conversion():
     Tests:
         1. Verifies default value of 0xFF is converted to 255 properly
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
 
     assert reg._cfg[2]['bits'][1]['default_value'] == 255
     assert reg._cfg[2]['bits'][0]['default_value'] == 3
@@ -124,9 +98,7 @@ def test_address_values():
         1. Checks sequential addresses are assigned correctly
         2. Verifies address offset is set to 64
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
 
     for i in range(2):
         assert reg._cfg[i]['addr_offset'] == 4 * i
@@ -140,39 +112,23 @@ def test_generate_vhd():
         1. Generates VHDL code from register definition
         2. Writes VHDL code to file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, '_test.vhd')
     with open(test_file, 'w') as f:
         f.write(reg.to_vhdl())
 
 
-def test_basic_vhd():
-    """Verify generated VHDL code compiles with GHDL.
+def test_generate_verilog():
+    """Test Verilog code generation and file output.
 
     Tests:
-        1. Generates temporary VHDL file with unique name
-        2. Attempts to compile with GHDL
-        3. Verifies compilation succeeds
-
-    Cleanup:
-        Removes temporary VHDL file
+        1. Generates Verilog code from register definition
+        2. Writes Verilog code to file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
-    test_file = os.path.join(test_dir, f'_test_{uuid.uuid4().hex}.vhd')
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    test_file = os.path.join(test_dir, '_test.v')
     with open(test_file, 'w') as f:
-        f.write(reg.to_vhdl())
-    try:
-        x = subprocess.run(['ghdl', '-a', test_file], capture_output=True, text=True)
-    finally:
-        os.remove(test_file)
-    assert x.returncode == 0, (
-        f'VHDL did not successfully compile in GHDL. See file: {test_file}\nError:\n'
-        + x.stderr
-    )
+        f.write(reg.to_verilog())
 
 
 def test_duplicate_address_detection():
@@ -186,8 +142,7 @@ def test_duplicate_address_detection():
     Raises:
         AssertionError: If duplicate addresses not detected
     """
-    json_file = os.path.join(test_dir, 'test_json.json')
-    with open(json_file, 'r') as f:
+    with open(json_file_path, 'r') as f:
         json_string = f.read()
     cfg = json.loads(json_string)
     cfg.append(dict(name='dup_addr', addr_offset=4, bits=32))
@@ -201,8 +156,7 @@ def test_duplicate_address_detection():
         == r'Multiple registers have the same address (addresses: [4])'
     )
 
-    json_file = os.path.join(test_dir, 'test_json.json')
-    with open(json_file, 'r') as f:
+    with open(json_file_path, 'r') as f:
         json_string = f.read()
     cfg = json.loads(json_string)
     cfg.append(dict(name='dup_addr', addr_offset=64, bits=32))
@@ -227,8 +181,7 @@ def test_duplicate_name_detection():
     Raises:
         AssertionError: If duplicate names not detected
     """
-    json_file = os.path.join(test_dir, 'test_json.json')
-    with open(json_file, 'r') as f:
+    with open(json_file_path, 'r') as f:
         json_string = f.read()
     cfg = json.loads(json_string)
     cfg.append(dict(name='Scratch_Register', addr_offset=8, bits=32))
@@ -254,8 +207,6 @@ def test_address_too_large():
     Raises:
         AssertionError: If oversized registers not detected
     """
-    json_file = os.path.join(test_dir, 'test_json.json')
-
     too_long_regs = [
         dict(name='too_long0', bits=33),
         dict(name='too_long1', bits=dict(num_bits=33, default_value=0)),
@@ -269,7 +220,7 @@ def test_address_too_large():
     ]
 
     for too_long_reg in too_long_regs:
-        with open(json_file, 'r') as f:
+        with open(json_file_path, 'r') as f:
             json_string = f.read()
         cfg = json.loads(json_string)
         cfg.append(too_long_reg)
@@ -284,56 +235,6 @@ def test_address_too_large():
         )
 
 
-def test_rtlsim_noreg():
-    """Test RTL simulation of generated register file.
-
-    Tests:
-        1. Generates VHDL code
-        2. Runs cocotb simulation with inputs NOT registered
-        3. Verifies simulation completes successfully
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
-    test_file = os.path.join(test_dir, '_test.vhd')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_vhdl())
-
-    cocotb_test.simulator.run(
-        vhdl_sources=['./test/_test.vhd'],
-        toplevel_lang='vhdl',
-        toplevel='reg_file',
-        module='test.test_sim',
-        simulator='ghdl',
-        parameters=dict(REGISTER_INPUTS=False),
-    )
-
-
-def test_rtlsim_reg():
-    """Test RTL simulation of generated register file.
-
-    Tests:
-        1. Generates VHDL code
-        2. Runs cocotb simulation with inputs registered
-        3. Verifies simulation completes successfully
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
-    test_file = os.path.join(test_dir, '_test.vhd')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_vhdl())
-
-    cocotb_test.simulator.run(
-        vhdl_sources=['./test/_test.vhd'],
-        toplevel_lang='vhdl',
-        toplevel='reg_file',
-        module='test.test_sim',
-        simulator='ghdl',
-        parameters=dict(REGISTER_INPUTS=True),
-    )
-
-
 def test_json_output():
     """Test JSON serialization and deserialization of register configuration.
 
@@ -343,9 +244,7 @@ def test_json_output():
         3. Verifies configurations match
         4. Verifies generated VHDL matches
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
 
     reg_str = reg.get_reg_json()
 
@@ -364,9 +263,7 @@ def test_md_output():
         1. Generates markdown documentation
         2. Writes documentation to file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
-        os.path.join(test_dir, 'test_json.json')
-    )
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
 
     with open(os.path.join(test_dir, '_test.md'), 'w') as f:
         f.write(reg.to_md())
@@ -418,13 +315,13 @@ def test_basic_heirarchy():
 
     # Check each register's address, name and type
     for i, cfg in enumerate(reg._cfg):
-        assert (
-            cfg['addr_offset'] == expected_addresses[i]
-        ), f"Wrong address for {cfg['name']}"
-        assert (
-            cfg['name'] == expected_names[i]
-        ), f"Wrong name at address {cfg['addr_offset']}"
-        assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"
+        assert cfg['addr_offset'] == expected_addresses[i], (
+            f'Wrong address for {cfg["name"]}'
+        )
+        assert cfg['name'] == expected_names[i], (
+            f'Wrong name at address {cfg["addr_offset"]}'
+        )
+        assert cfg['reg_type'] == expected_types[i], f'Wrong type for {cfg["name"]}'
 
 
 def test_heirarchy_separator():
@@ -474,13 +371,13 @@ def test_heirarchy_separator():
 
     # Check each register's address, name and type
     for i, cfg in enumerate(reg._cfg):
-        assert (
-            cfg['addr_offset'] == expected_addresses[i]
-        ), f"Wrong address for {cfg['name']}"
-        assert (
-            cfg['name'] == expected_names[i]
-        ), f"Wrong name at address {cfg['addr_offset']}"
-        assert cfg['reg_type'] == expected_types[i], f"Wrong type for {cfg['name']}"
+        assert cfg['addr_offset'] == expected_addresses[i], (
+            f'Wrong address for {cfg["name"]}'
+        )
+        assert cfg['name'] == expected_names[i], (
+            f'Wrong name at address {cfg["addr_offset"]}'
+        )
+        assert cfg['reg_type'] == expected_types[i], f'Wrong type for {cfg["name"]}'
 
 
 def test_missing_config():
@@ -494,8 +391,7 @@ def test_missing_config():
     Raises:
         AssertionError: If missing config not detected
     """
-    json_file = os.path.join(test_dir, 'test_json.json')
-    with open(json_file, 'r') as f:
+    with open(json_file_path, 'r') as f:
         cfg = json.load(f)
 
     new_cfg = [c for c in cfg if not (isinstance(c, dict) and 'config' in c)]

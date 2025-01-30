@@ -1,4 +1,4 @@
-# Copyright (C) 2024 KEELFW
+# Copyright (C) 2025 KEELFW
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,8 @@
 import json
 import os
 import jinja2
+import datetime
+import importlib.metadata
 import axi4lite_reg_generator.filters as filters
 from axi4lite_reg_generator.schema import SCHEMA as Schema
 
@@ -52,6 +54,17 @@ class RegDef:
         self._reg_cfg, self._cfg = self._split_config(cfg)
         self._cfg = Schema.validate(self._cfg)
         self._reg_cfg = Schema.validate([dict(config=self._reg_cfg)])[0]['config']
+
+        try:
+            self.id_username = os.getlogin()
+        except OSError:
+            self._reg_cfg['include_username'] = False
+            self.id_username = 'unknown'
+        self.id_hostname = os.uname().nodename
+        self.id_timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
+            '%Y-%m-%d %H:%M:%S %Z'
+        )
+        self.id_version = importlib.metadata.version('axi4lite_reg_generator')
 
         self._addr_incr = int(self._reg_cfg['data_size'] / 8)
 
@@ -235,6 +248,14 @@ class RegDef:
         """
         return self._render_template('axi4lite_template.vhd')
 
+    def to_verilog(self) -> str:
+        """Generate Verilog code for register file.
+
+        Returns:
+            Generated Verilog code as string
+        """
+        return self._render_template('axi4lite_template.v')
+
     def to_md(self) -> str:
         """Generate Markdown documentation for register file.
 
@@ -263,15 +284,20 @@ class RegDef:
         j2env.filters['count_bits'] = filters.count_bits
         j2env.filters['get_offset'] = filters.get_offset
         j2env.filters['default_val'] = filters.default_val
+        j2env.filters['default_val_v'] = filters.default_val_v
         j2env.filters['addr_bits_from_data'] = filters.addr_bits_from_data
 
         template = j2env.get_template(template_file)
 
         _tmp = dict(
             entity_name='reg_file',
-            data_size=self._reg_cfg['data_size'],
             strobe_size=self._reg_cfg['data_size'] // 8,
+            id_username=self.id_username,
+            id_hostname=self.id_hostname,
+            id_timestamp=self.id_timestamp,
+            id_version=self.id_version,
             regs=self._cfg,
+            **self._reg_cfg,
         )
         return template.render(_tmp)
 

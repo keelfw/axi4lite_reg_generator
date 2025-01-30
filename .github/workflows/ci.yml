@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
+      - 17-verilog # temporary branch for testing verilog
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
@@ -11,18 +12,45 @@ on:
     - cron: "0 3 * * 0"
 
 jobs:
-  test:
+  test_common:
     runs-on: ubuntu-latest  # This specifies the runner environment
 
     steps:
-    # Step 1: Check out the repository
     - name: Check out repository
       uses: actions/checkout@v4
 
-    # Step 2: Build Docker image
-    - name: Build Docker image
-      run: docker build -t ghdl-test .
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
 
-    # Step 3: Run tests inside Docker container
+    - name: Install dependencies
+      run: pip install poetry && poetry install
     - name: Run tests
-      run: docker run ghdl-test poetry run pytest
+      run: poetry run pytest test/test_regdef.py test/test_argparse.py
+
+  test_vhdl:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: docker build -t ghdl-test -f Dockerfile.ghdl .
+
+    - name: Run tests
+      run: docker run ghdl-test poetry run pytest test/test_regdef.py test/test_argparse.py test/test_vhdl.py
+
+  test_verilog:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: docker build -t verilator-test -f Dockerfile.verilator .
+
+    - name: Run tests
+      run: docker run --entrypoint=poetry verilator-test run pytest test/test_regdef.py test/test_argparse.py test/test_verilog.py
