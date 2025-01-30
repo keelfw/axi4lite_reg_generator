@@ -20,6 +20,7 @@ import os
 import jinja2
 import datetime
 import importlib.metadata
+import hashlib
 import axi4lite_reg_generator.filters as filters
 from axi4lite_reg_generator.schema import SCHEMA as Schema
 
@@ -246,7 +247,8 @@ class RegDef:
         Returns:
             Generated VHDL code as string
         """
-        return self._render_template('axi4lite_template.vhd')
+        code = self._render_template('axi4lite_template.vhd')
+        return code[0] + '\n-- SHA-256: ' + code[1]
 
     def to_verilog(self) -> str:
         """Generate Verilog code for register file.
@@ -254,7 +256,8 @@ class RegDef:
         Returns:
             Generated Verilog code as string
         """
-        return self._render_template('axi4lite_template.v')
+        code = self._render_template('axi4lite_template.v')
+        return code[0] + '\n// SHA-256: ' + code[1]
 
     def to_md(self) -> str:
         """Generate Markdown documentation for register file.
@@ -262,11 +265,12 @@ class RegDef:
         Returns:
             Generated Markdown documentation as string
         """
-        return self._render_template('doc.md')
+        code = self._render_template('doc.md')
+        return code[0] + '\n<!-- SHA-256: ' + code[1] + ' -->'
 
     def _render_template(
         self, template_file: str, template_dir: str = template_dir
-    ) -> str:
+    ) -> tuple[str, str]:
         """Render Jinja2 template with register configuration.
 
         Args:
@@ -274,7 +278,9 @@ class RegDef:
             template_dir: Directory containing templates
 
         Returns:
-            Rendered template as string
+            Tuple containing:
+                - Rendered template as string
+                - SHA-256 hash of rendered template
 
         Raises:
             TemplateNotFound: If template file not found
@@ -299,7 +305,9 @@ class RegDef:
             regs=self._cfg,
             **self._reg_cfg,
         )
-        return template.render(_tmp)
+        rendered_template = template.render(_tmp)
+        hash = hashlib.sha256(rendered_template.encode()).hexdigest()
+        return rendered_template, hash
 
     def _check_regs_too_large(self) -> None:
         """Check if any registers exceed maximum bit width.

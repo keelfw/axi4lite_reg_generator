@@ -268,3 +268,4 @@ begin
   end process;
 
 end architecture rtl;
+-- SHA-256: ffdd1243db9b2d8469b35e70dfd9e0c77e54ce447f5ac7b182169881e0ef9478
