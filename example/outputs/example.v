@@ -297,3 +297,5 @@ always @(posedge REGS_ACLK) begin
 end
 
 endmodule
+
+// SHA-256: b695f4ba6e5e3190c7ae11f094dcedde641b39132dd5c482e80a51bc7aa7605a

@@ -53,3 +53,5 @@ This register has fields
   | 11 | 4 | reg8  | 255 | This is my 8 bit field |
   | 3 | 0 | reg4  | 0 |  |
   
+
+<!-- SHA-256: 164f67d6a368a1d84d21759a9d08c27fbba03074514916a828131d5cdc4b638a -->

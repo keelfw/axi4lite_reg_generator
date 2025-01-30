@@ -157,6 +157,31 @@ This results in a register map with `Heir_Register_Top` at address 0 and heirarc
 ## Resulting Register Naming Convention
 When using heirarchy, the subordinate heirarchical names are prepended with the parent names. By default, they are separated using the `_` character, but this can be changed in the configuration by setting the `instance_separator` value. Prepending the parent prevents naming conflicts in the generated RTL.
 
+# Hash Verification
+Each generated file (VHDL, Verilog, and Markdown documentation) contains a SHA-256 hash to prove the file has not been modified. The hash is put as a comment at the end of each file.
+
+VHDL Example:
+```vhdl
+-- SHA-256: 1e0101dac8c2527f28c65a8e942557c74d56b87be035ccb03b7be79305ce5527
+```
+
+Verilog Example:
+```verilog
+// SHA-256: fa8a530141168f8baa23e2830298d9fde1acff16267d16caf3f8906f469a6361
+```
+
+Markdown Example:
+```markdown
+<!-- SHA-256: 5d30d82bb4535852df61c0fd1fd08568c6ca7ebe885e97b7f5dba1aa33e46111 -->
+```
+
+To verify the hash you can use the hash validator tool included with this package. To check the validity of the files, run the following command:
+```bash
+$ python -m axi4lite_reg_generator.validate my_regs.vhd my_regs.v my_regs.md
+```
+
+This tool will print out whether the hashes are valid or not.
+
 # Instructions to Create Register File
 In a simple example, if you have the json file shown in the example above saved as `my_regs.json`, type the following into the command prompt to create `my_regs.vhd`, `my_regs.v`, and `my_regs.md`.
 ```bash
