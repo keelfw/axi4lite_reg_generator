@@ -36,11 +36,11 @@ def test_check_verilator_installed():
         AssertionError: If Verilator is not found or returns non-zero exit code
     """
     try:
-        assert subprocess.run(['verilator', '--version']).returncode == 0, (
-            'Verilator executable not found in path'
+        assert subprocess.run(['iverilog']).returncode, (
+            'Icarus executable not found in path'
         )
     except FileNotFoundError:
-        assert False, 'Verilator not found in path'
+        assert False, 'Icarus not found in path'
 
 
 def test_basic_verilog():
@@ -60,7 +60,7 @@ def test_basic_verilog():
         f.write(reg.to_verilog())
     try:
         x = subprocess.run(
-            ['verilator', '--lint-only', test_file], capture_output=True, text=True
+            ['iverilog', '-tnull', '-Wall', test_file], capture_output=True, text=True
         )
     finally:
         os.remove(test_file)
@@ -88,8 +88,9 @@ def test_verilogsim_noreg():
         toplevel_lang='verilog',
         toplevel='reg_file',
         module='test.test_sim',
-        simulator='verilator',
+        simulator='icarus',
         parameters=dict(REGISTER_INPUTS=0),
+        timescale='1ns/1ns',
     )
 
 
@@ -111,6 +112,7 @@ def test_verilogsim_reg():
         toplevel_lang='verilog',
         toplevel='reg_file',
         module='test.test_sim',
-        simulator='verilator',
+        simulator='icarus',
         parameters=dict(REGISTER_INPUTS=1),
+        timescale='1ns/1ns',
     )

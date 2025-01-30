@@ -109,11 +109,13 @@ reg [1:0] rd_resp;
 
 // Handle inputs
 
+always @* begin
 {% for reg in regs -%}
 {% if reg['reg_type'] == 'rw' -%}
-  assign REG_{{ reg['name'] }}_R = REG_{{ reg['name'] }}_W;
+  REG_{{ reg['name'] }}_R <= REG_{{ reg['name'] }}_W;
 {% endif -%}
 {% endfor %}
+end
 
 generate
   if (REGISTER_INPUTS > 0) begin : reg_inputs_g
@@ -125,11 +127,13 @@ generate
       {% endfor %}
     end
   end else begin : con_inputs_g
-    {% for reg in regs -%}
-    {% if reg['reg_type'] != 'rw' -%}
-      assign REG_{{ reg['name'] }}_R = R_{{ reg['name'] }}_I;
-    {% endif -%}
-    {% endfor %}
+    always @* begin
+      {% for reg in regs -%}
+      {% if reg['reg_type'] != 'rw' -%}
+        REG_{{ reg['name'] }}_R <= R_{{ reg['name'] }}_I;
+      {% endif -%}
+      {% endfor %}
+    end
   end
 endgenerate
 

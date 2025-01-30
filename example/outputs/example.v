@@ -108,8 +108,10 @@ reg [1:0] rd_resp;
 
 // Handle inputs
 
-assign REG_Scratch_Register_R = REG_Scratch_Register_W;
+always @* begin
+REG_Scratch_Register_R <= REG_Scratch_Register_W;
 
+end
 
 generate
   if (REGISTER_INPUTS > 0) begin : reg_inputs_g
@@ -119,9 +121,11 @@ generate
       
     end
   end else begin : con_inputs_g
-    assign REG_Test_Register_R = R_Test_Register_I;
-    assign REG_Register_with_Fields_R = R_Register_with_Fields_I;
-    
+    always @* begin
+      REG_Test_Register_R <= R_Test_Register_I;
+      REG_Register_with_Fields_R <= R_Register_with_Fields_I;
+      
+    end
   end
 endgenerate
 
@@ -298,4 +302,4 @@ end
 
 endmodule
 
-// SHA-256: b695f4ba6e5e3190c7ae11f094dcedde641b39132dd5c482e80a51bc7aa7605a
+// SHA-256: e8deb0ea3328e9a103016d16a51ab1c9044ac5347a6ba3a53b88a6d2a9d4a021

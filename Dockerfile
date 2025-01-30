@@ -8,7 +8,8 @@ RUN apt-get -y update && \
     python3-venv \
     python3-dev \
     python3-pip \
-    python-is-python3 && \
+    python-is-python3 \
+    iverilog && \
     pip install poetry
 
 COPY ./ /reg/
@@ -20,5 +21,5 @@ RUN poetry config virtualenvs.create false \
 CMD ["sleep", "infinity"]
 
 # To run in interactive mode:
-# $ docker build -t ghdl -f Dockerfile.ghdl .
-# $ docker run -it --entrypoint=/bin/bash -v .:/reg ghdl
+# $ docker build -t reg_test -f Dockerfile .
+# $ docker run -it --entrypoint=/bin/bash -v .:/reg reg_test
