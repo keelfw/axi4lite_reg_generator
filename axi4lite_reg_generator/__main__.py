@@ -18,7 +18,7 @@
 import argparse
 import os
 import sys
-from . import regdef
+import axi4lite_reg_generator
 
 
 def report_file_exists(file: str) -> bool:
@@ -38,13 +38,18 @@ def main():
     parser.add_argument(
         '-o', '--output', type=str, required=True, help='Output save base file name'
     )
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'%(prog)s {axi4lite_reg_generator.__version__}',
+    )
 
     args = parser.parse_args()
 
     if not report_file_exists(args.json_input):
         exit(-1)
 
-    regs = regdef.RegDef.from_json_file(args.json_input)
+    regs = axi4lite_reg_generator.regdef.RegDef.from_json_file(args.json_input)
 
     if os.path.splitext(args.output)[1] in ('.vhd', '.v', '.md'):
         print(

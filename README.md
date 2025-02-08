@@ -71,7 +71,7 @@ Read / Write register type. This register type will always readback exactly what
 Custom register type. This register relies on external logic to set the read value which may not reflect the output value. An example of this is an interrupt status register where you "write" the value to clear an interrupt. Writing a `1` does not set that bit. External logic is responsible for using the output (write value) and setting the input (read value).
 
 ## Bits Definition
-There are multiple ways to describe the bits in a reigster.
+There are multiple ways to describe the bits in a register.
 
 1. Use an integer to set the number of bits
 ```json

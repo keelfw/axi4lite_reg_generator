@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "axi4lite_reg_generator"
-version = "0.2.0"
+version = "0.2.1"
 description = "Template based VHDL register generator"
 authors = ["Kyle O'Brien <kyle@keelfw.com>"]
 license = "lgpl"

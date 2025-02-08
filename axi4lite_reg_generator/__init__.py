@@ -15,4 +15,15 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # See LICENSE file for full license details.
+import importlib.metadata
 from .regdef import RegDef as RegDef
+
+
+def get_version():
+    try:
+        return importlib.metadata.version('axi4lite_reg_generator')
+    except importlib.metadata.PackageNotFoundError:
+        return '0.0.0'
+
+
+__version__ = get_version()
