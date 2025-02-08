@@ -19,8 +19,8 @@ import json
 import os
 import jinja2
 import datetime
-import importlib.metadata
 import hashlib
+import axi4lite_reg_generator
 import axi4lite_reg_generator.filters as filters
 from axi4lite_reg_generator.schema import SCHEMA as Schema
 
@@ -65,7 +65,7 @@ class RegDef:
         self.id_timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
             '%Y-%m-%d %H:%M:%S %Z'
         )
-        self.id_version = importlib.metadata.version('axi4lite_reg_generator')
+        self.id_version = axi4lite_reg_generator.__version__
 
         self._addr_incr = int(self._reg_cfg['data_size'] / 8)
 
