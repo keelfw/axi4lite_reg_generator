@@ -15,6 +15,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # See LICENSE file for full license details.
+from __future__ import annotations
 import json
 import os
 import jinja2
