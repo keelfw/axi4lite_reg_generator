@@ -10,7 +10,7 @@ readme = "README.md"
 packages = [
     { include = "axi4lite_reg_generator" }
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 [tool.poetry]
 version = "0.0.0"
