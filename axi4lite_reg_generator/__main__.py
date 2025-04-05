@@ -30,7 +30,7 @@ def report_file_exists(file: str) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(
-        prog='AXI4Lite Register Generator',
+        prog='axi4lite_reg_generator',
         description='Generate a VHDL and Verilog register file with an AXI4-Lite interface from JSON',
     )
 
