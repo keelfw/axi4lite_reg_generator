@@ -1,13 +1,22 @@
-[tool.poetry]
+[project]
 name = "axi4lite_reg_generator"
-version = "0.2.2"
+dynamic = ["version"]
 description = "Template based VHDL register generator"
-authors = ["Kyle O'Brien <kyle@keelfw.com>"]
+authors = [
+    { name = "Kyle O'Brien", email = "<kyle@keelfw.com>" }
+]
 license = "lgpl"
 readme = "README.md"
 packages = [
     { include = "axi4lite_reg_generator" }
 ]
+requires-python = ">=3.8"
+
+[tool.poetry]
+version = "0.0.0"
+
+[tool.poetry-dynamic-versioning]
+enable = true
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -29,9 +38,12 @@ cocotb = "^1.9.1"
 cocotb-bus = "^0.2.1"
 cocotb-test = "^0.2.5"
 
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.coverage.run]
 branch = true
