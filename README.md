@@ -44,7 +44,11 @@ The tool also creates detailed register documentation that can be used in a hard
 
 # Config
 
-**data_size** specifies the width of the data bus
+* **data_size** specifies the width of the data bus
+* **instance_separator** [default: `_`] specifies how to concatenate names when applying [heirarchy](#heirarchy).
+* **include_username** [default: true] specifies whether to include the username of the person who ran axi4lite_reg_generator in the output file
+* **include_hostname** [default: true] specifies whether to include the hostname of the machine that ran axi4lite_reg_generator in the output file
+* **include_timestamp** [default: true] specifies whether to include the timestamp when axi4lite_reg_generator was run in the output file
 
 # Register Configuration Schema
 
@@ -177,7 +181,7 @@ Markdown Example:
 
 To verify the hash you can use the hash validator tool included with this package. To check the validity of the files, run the following command:
 ```bash
-$ python -m axi4lite_reg_generator.validate my_regs.vhd my_regs.v my_regs.md
+$ axi4lite_reg_generator.validate my_regs.vhd my_regs.v my_regs.md
 ```
 
 This tool will print out whether the hashes are valid or not.
@@ -185,18 +189,18 @@ This tool will print out whether the hashes are valid or not.
 # Instructions to Create Register File
 In a simple example, if you have the json file shown in the example above saved as `my_regs.json`, type the following into the command prompt to create `my_regs.vhd`, `my_regs.v`, and `my_regs.md`.
 ```bash
-$ python -m axi4lite_reg_generator my_regs.json -o my_regs
+$ axi4lite_reg_generator my_regs.json -o my_regs
 ```
 
 To see the full list of usage options, type the following command into the command prompt.
 
 ```bash
-$ python -m axi4lite_reg_generator --help
+$ axi4lite_reg_generator --help
 ```
 
 This results in the following usage information:
 ```
-usage: AXI4Lite Register Generator [-h] -o OUTPUT json_input
+usage: axi4lite_reg_generator [-h] -o OUTPUT json_input
 
 Generate a VHDL and Verilog register file with an AXI4-Lite interface from JSON
 
