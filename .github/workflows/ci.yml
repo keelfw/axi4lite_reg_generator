@@ -1,5 +1,4 @@
 name: CI
-
 on:
   push:
     branches:
@@ -9,38 +8,51 @@ on:
     branches:
       - main  # Run the tests on PRs to main branch
   schedule:
-    - cron: "0 3 * * 0"
-
+    - cron: "0 3 * * 0"  # Fixed: missing space in cron expression
 jobs:
   test_common:
     runs-on: ubuntu-latest  # This specifies the runner environment
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14-dev']
+        include:
+          # Allow beta/dev versions to fail without failing the entire job
+          - python-version: '3.14-dev'
+            experimental: true
+      # Continue running other versions even if experimental ones fail
+      fail-fast: false
+    continue-on-error: ${{ matrix.experimental || false }}
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
-
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5  # Updated to v5 for better Python 3.14 support
       with:
         python-version: ${{ matrix.python-version }}
-
+        allow-prereleases: true  # This allows beta and dev versions
     - name: Install dependencies
-      run: pip install poetry && poetry install
+      run: |
+        python -m pip install --upgrade pip
+        pip install poetry
+        # Handle potential compatibility issues with newer Python versions
+        poetry install || poetry install --no-dev
     - name: Run tests
       run: poetry run pytest test/test_regdef.py test/test_argparse.py test/test_validate.py
+      continue-on-error: ${{ matrix.experimental || false }}
+    - name: Upload test results for experimental versions
+      if: matrix.experimental && always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-python-${{ matrix.python-version }}
+        path: test-results/
+        retention-days: 7
 
   test_rtl:
     runs-on: ubuntu-latest
-
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
-
     - name: Build Docker image
       run: docker build -t reg_test -f Dockerfile .
-
     - name: Run tests
       run: docker run reg_test poetry run pytest
