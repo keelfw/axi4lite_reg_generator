@@ -18,6 +18,7 @@
 import pytest
 import sys
 import os
+import re
 from axi4lite_reg_generator.__main__ import main
 
 test_dir = os.path.dirname(__file__)
@@ -75,3 +76,44 @@ def test_specify_extension():
 
         # Check whether files were written
         assert not os.path.exists(out_file_base + ext)
+
+
+def test_custom_entity_name():
+    """
+    Test that the output name is correctly put into the entity name of the resulting
+    files.
+    """
+    # Need the underscore so the generated file stays in the .gitignore list even though
+    # this isn't a valid VHD entity name
+    entity_name = '_test_entity_name'
+
+    out_file_base = os.path.join(test_dir, entity_name)
+    expected_extensions = ('.vhd', '.v', '.md')
+
+    for ext in expected_extensions:
+        if os.path.exists(out_file := out_file_base + ext):
+            os.remove(out_file)
+
+    sys.argv = ['', json_file_path, '-o', out_file_base]
+    main()
+
+    with open(out_file_base + '.vhd', 'r') as f:
+        vhdl_str = f.read()
+    re_search = re.search('entity (\w+) is', vhdl_str)
+    assert re_search.group(1) == entity_name, (
+        f'Entity name should be {entity_name}, but is {re_search.group(1)}'
+    )
+
+    with open(out_file_base + '.v', 'r') as f:
+        verilog_str = f.read()
+    re_search = re.search('module (\w+)', verilog_str)
+    assert re_search.group(1) == entity_name, (
+        f'Module name should be {entity_name}, but is {re_search.group(1)}'
+    )
+
+    with open(out_file_base + '.md', 'r') as f:
+        md_str = f.read()
+    re_search = re.search('# (\w+) Register Definitions', md_str)
+    assert re_search.group(1) == entity_name, (
+        f'Markdown title should be {entity_name}, but is {re_search.group(1)}'
+    )

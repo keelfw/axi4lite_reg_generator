@@ -41,12 +41,16 @@ class RegDef:
 
     """
 
-    def __init__(self, cfg: dict, path_to_cfg: str = '.') -> None:
+    def __init__(
+        self, cfg: dict, path_to_cfg: str = '.', entity_name: str | None = None
+    ) -> None:
         """Initialize register definition from configuration dictionary.
 
         Args:
             cfg: Dictionary containing register configurations and settings
             path_to_cfg: Base path for resolving relative file paths in configuration
+            entity_name: Optional override name for HDL entity name. If not specified,
+              value from JSON configuration is used.
 
         Raises:
             ValueError: If configuration is invalid or contains duplicates
@@ -57,6 +61,8 @@ class RegDef:
 
         self._reg_cfg, self._cfg = self._split_config(cfg)
         self._cfg = Schema.validate(self._cfg)
+        if entity_name is not None:
+            self._reg_cfg['entity_name'] = entity_name
         self._reg_cfg = Schema.validate([dict(config=self._reg_cfg)])[0]['config']
 
         try:
@@ -195,11 +201,13 @@ class RegDef:
             self._next_address = addr + offset
 
     @staticmethod
-    def from_json_file(json_file: str) -> 'RegDef':
+    def from_json_file(json_file: str, entity_name: str | None = None) -> 'RegDef':
         """Create RegDef instance from JSON configuration file.
 
         Args:
             json_file: Path to JSON configuration file
+            entity_name: Optional override name for HDL entity name. If not specified,
+              value from JSON configuration is used.
 
         Returns:
             New RegDef instance
@@ -213,7 +221,7 @@ class RegDef:
         with open(json_file, 'r') as f:
             cfg = json.load(f)
 
-        return RegDef(cfg, path_to_cfg=path_to_cfg)
+        return RegDef(cfg, path_to_cfg=path_to_cfg, entity_name=entity_name)
 
     @staticmethod
     def _split_config(cfg: list, require_config: bool = True) -> tuple:
@@ -299,7 +307,6 @@ class RegDef:
         template = j2env.get_template(template_file)
 
         _tmp = dict(
-            entity_name='reg_file',
             strobe_size=self._reg_cfg['data_size'] // 8,
             id_username=self.id_username,
             id_hostname=self.id_hostname,
