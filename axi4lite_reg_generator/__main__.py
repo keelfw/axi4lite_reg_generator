@@ -49,7 +49,10 @@ def main():
     if not report_file_exists(args.json_input):
         exit(-1)
 
-    regs = axi4lite_reg_generator.regdef.RegDef.from_json_file(args.json_input)
+    output_entity_name = os.path.split(args.output)[1]
+    regs = axi4lite_reg_generator.regdef.RegDef.from_json_file(
+        args.json_input, entity_name=output_entity_name
+    )
 
     if os.path.splitext(args.output)[1] in ('.vhd', '.v', '.md'):
         print(

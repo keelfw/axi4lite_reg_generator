@@ -20,6 +20,7 @@ import axi4lite_reg_generator
 import json
 import pytest
 import schema
+import re
 
 test_dir = os.path.dirname(__file__)
 json_file_path = os.path.join(test_dir, 'test_json.json')
@@ -406,3 +407,35 @@ def test_missing_config():
 
     assert e_info.type is ValueError
     assert str(e_info.value) == r'Could not find configuration'
+
+
+def test_custom_entity_name():
+    """Test custom entity name
+
+    Tests:
+        1. Verify entity name in VHDL
+        2. Verify entity name in Verilog
+        3. Verify entity name in Markdown documentation
+    """
+    test_override_entity_name = 'test_entity_name'
+    reg = axi4lite_reg_generator.RegDef.from_json_file(
+        json_file_path, test_override_entity_name
+    )
+
+    vhdl_str = reg.to_vhdl()
+    re_search = re.search('entity (\w+) is', vhdl_str)
+    assert re_search.group(1) == test_override_entity_name, (
+        f'Entity name should be {test_override_entity_name}, but is {re_search.group(1)}'
+    )
+
+    verilog_str = reg.to_verilog()
+    re_search = re.search('module (\w+)', verilog_str)
+    assert re_search.group(1) == test_override_entity_name, (
+        f'Module name should be {test_override_entity_name}, but is {re_search.group(1)}'
+    )
+
+    md_str = reg.to_md()
+    re_search = re.search('# (\w+) Register Definitions', md_str)
+    assert re_search.group(1) == test_override_entity_name, (
+        f'Markdown title should be {test_override_entity_name}, but is {re_search.group(1)}'
+    )

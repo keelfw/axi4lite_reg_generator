@@ -42,6 +42,7 @@ SCHEMA = Schema(
             {
                 'config': {
                     'data_size': And(PositiveInt, lambda x: x % 8 == 0),
+                    Optional('entity_name', default='reg_file'): str,
                     Optional('instance_separator', default='_'): str,
                     Optional('include_username', default=True): bool,
                     Optional('include_hostname', default=True): bool,
