@@ -174,7 +174,7 @@ begin
           when WAIT4RESP =>
             if REGS_BREADY = '1' then
               state_w <= WAIT4ADDR;
-              REGS_BVALID <= '1';
+              REGS_BVALID <= '0';
               REGS_AWREADY <= '1';
             end if;
           when others =>
