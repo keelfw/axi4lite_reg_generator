@@ -179,7 +179,7 @@ always @(posedge REGS_ACLK) begin
       W_STATE_WAIT4RESP: begin
         if (REGS_BREADY) begin
           state_w <= W_STATE_WAIT4ADDR;
-          REGS_BVALID <= 1;
+          REGS_BVALID <= 0;
           REGS_AWREADY <= 1;
         end
       end
