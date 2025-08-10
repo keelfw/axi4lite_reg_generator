@@ -17,9 +17,10 @@ RUN apt-get -y update && \
     python3-dev \
     python3-pip \
     python-is-python3 \
-    tcl-dev \
+    pipx \
     iverilog && \
-    pip install poetry
+    pipx ensurepath && \
+    pipx install poetry
 
 COPY ./ /reg/
 
