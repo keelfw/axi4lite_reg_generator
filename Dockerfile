@@ -2,12 +2,12 @@ FROM ghdl/ghdl:ubuntu22-mcode
 
 WORKDIR /reg
 
-# Prevent interactive prompts
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=UTC
-
-# Set timezone
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIPX_HOME="/usr/local/pipx" \
+    PIPX_BIN_DIR="/usr/local/bin" \
+    PATH="$PIPX_HOME/bin:$POETRY_HOME/bin:$PATH" \
+    POETRY_VIRTUALENVS_IN_PROJECT=false \
+    POETRY_NO_INTERACTION=1
 
 # Install packages
 RUN apt-get -y update && \
@@ -17,16 +17,14 @@ RUN apt-get -y update && \
     python3-dev \
     python3-pip \
     python-is-python3 \
-    pipx \
-    iverilog && \
-    pipx ensurepath && \
+    iverilog
+
+RUN pip install --no-cache-dir pipx && \
     pipx install poetry
 
 COPY ./ /reg/
 
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction \
-    && rm -rf /root/.cache/pypoetry
+RUN poetry install --no-interaction
 
 CMD ["sleep", "infinity"]
 
