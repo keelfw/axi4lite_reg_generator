@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
-      - 26-add-automated-testing-to-all-active-versions-of-python # temporary testing branch
+      - 35-resolve-failing-action-for-test_rtl # temporary testing branch
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
@@ -33,7 +33,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install poetry
+        pip install --no-cache-dir pipx
+        pipx ensurepath
+        pipx install poetry
         # Handle potential compatibility issues with newer Python versions
         poetry install || poetry install --no-dev
     - name: Run tests

@@ -2,6 +2,14 @@ FROM ghdl/ghdl:ubuntu22-mcode
 
 WORKDIR /reg
 
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIPX_HOME="/usr/local/pipx" \
+    PIPX_BIN_DIR="/usr/local/bin" \
+    PATH="$PIPX_HOME/bin:$POETRY_HOME/bin:$PATH" \
+    POETRY_VIRTUALENVS_IN_PROJECT=false \
+    POETRY_NO_INTERACTION=1
+
+# Install packages
 RUN apt-get -y update && \
     apt-get install -y \
     python3 \
@@ -9,14 +17,14 @@ RUN apt-get -y update && \
     python3-dev \
     python3-pip \
     python-is-python3 \
-    iverilog && \
-    pip install poetry
+    iverilog
+
+RUN pip install --no-cache-dir pipx && \
+    pipx install poetry
 
 COPY ./ /reg/
 
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction \
-    && rm -rf /root/.cache/pypoetry
+RUN poetry install --no-interaction
 
 CMD ["sleep", "infinity"]
 
