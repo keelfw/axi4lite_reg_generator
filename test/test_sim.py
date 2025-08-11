@@ -60,11 +60,21 @@ async def basic_readwrite(dut):
 
     # Reset
     axim = AXI4LiteMaster(dut, 'REGS', dut.REGS_ACLK)
-    cocotb.start_soon(verify_handshake_single(dut.REGS_ACLK, dut.REGS_AWVALID, dut.REGS_AWREADY, "AW"))
-    cocotb.start_soon(verify_handshake_single(dut.REGS_ACLK, dut.REGS_WVALID, dut.REGS_WREADY, "W"))
-    cocotb.start_soon(verify_handshake_single(dut.REGS_ACLK, dut.REGS_ARVALID, dut.REGS_ARREADY, "AR"))
-    cocotb.start_soon(verify_handshake_single(dut.REGS_ACLK, dut.REGS_RVALID, dut.REGS_RREADY, "R"))
-    cocotb.start_soon(verify_handshake_single(dut.REGS_ACLK, dut.REGS_BVALID, dut.REGS_BREADY, "B"))
+    cocotb.start_soon(
+        verify_handshake_single(dut.REGS_ACLK, dut.REGS_AWVALID, dut.REGS_AWREADY, 'AW')
+    )
+    cocotb.start_soon(
+        verify_handshake_single(dut.REGS_ACLK, dut.REGS_WVALID, dut.REGS_WREADY, 'W')
+    )
+    cocotb.start_soon(
+        verify_handshake_single(dut.REGS_ACLK, dut.REGS_ARVALID, dut.REGS_ARREADY, 'AR')
+    )
+    cocotb.start_soon(
+        verify_handshake_single(dut.REGS_ACLK, dut.REGS_RVALID, dut.REGS_RREADY, 'R')
+    )
+    cocotb.start_soon(
+        verify_handshake_single(dut.REGS_ACLK, dut.REGS_BVALID, dut.REGS_BREADY, 'B')
+    )
     setup_dut(dut)
     dut.R_Test_Register_I.setimmediatevalue(0xFEEDBACE)
     dut.R_Register_with_Fields_I.setimmediatevalue(int(2**12 - 1))
@@ -277,19 +287,24 @@ async def upd_pulse(dut):
 
     dut._log.info('Test complete')
 
+
 async def verify_handshake_single(clk, valid, ready, monitor_name=None):
     if monitor_name is None:
-        monitor_name = ""
+        monitor_name = ''
     else:
         monitor_name = f'{monitor_name}: '
     tx_on_last_clk = False
     while True:
         await RisingEdge(clk)
         if valid.value == 1 and ready.value == 1:
-            assert not tx_on_last_clk, f"{monitor_name}AXI Lite doesn't support back to back transactions"
+            assert not tx_on_last_clk, (
+                f"{monitor_name}AXI Lite doesn't support back to back transactions"
+            )
             tx_on_last_clk = True
         elif valid.value == 1:
-            assert not tx_on_last_clk, f"{monitor_name}Valid did not go low after transaction"
+            assert not tx_on_last_clk, (
+                f'{monitor_name}Valid did not go low after transaction'
+            )
             tx_on_last_clk = False
         else:
             tx_on_last_clk = False
