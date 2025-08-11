@@ -99,21 +99,24 @@ def test_custom_entity_name():
 
     with open(out_file_base + '.vhd', 'r') as f:
         vhdl_str = f.read()
-    re_search = re.search('entity (\w+) is', vhdl_str)
+    re_search = re.search(r'entity (\w+) is', vhdl_str)
+    assert re_search is not None, 'Did not find entity!'
     assert re_search.group(1) == entity_name, (
         f'Entity name should be {entity_name}, but is {re_search.group(1)}'
     )
 
     with open(out_file_base + '.v', 'r') as f:
         verilog_str = f.read()
-    re_search = re.search('module (\w+)', verilog_str)
+    re_search = re.search(r'module (\w+)', verilog_str)
+    assert re_search is not None, 'Did not find module!'
     assert re_search.group(1) == entity_name, (
         f'Module name should be {entity_name}, but is {re_search.group(1)}'
     )
 
     with open(out_file_base + '.md', 'r') as f:
         md_str = f.read()
-    re_search = re.search('# (\w+) Register Definitions', md_str)
+    re_search = re.search(r'# (\w+) Register Definitions', md_str)
+    assert re_search is not None, 'Did not find Register Definition in documentation!'
     assert re_search.group(1) == entity_name, (
         f'Markdown title should be {entity_name}, but is {re_search.group(1)}'
     )
