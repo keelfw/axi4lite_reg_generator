@@ -423,19 +423,22 @@ def test_custom_entity_name():
     )
 
     vhdl_str = reg.to_vhdl()
-    re_search = re.search('entity (\w+) is', vhdl_str)
+    re_search = re.search(r'entity (\w+) is', vhdl_str)
+    assert re_search is not None, 'Did not find entity!'
     assert re_search.group(1) == test_override_entity_name, (
         f'Entity name should be {test_override_entity_name}, but is {re_search.group(1)}'
     )
 
     verilog_str = reg.to_verilog()
-    re_search = re.search('module (\w+)', verilog_str)
+    re_search = re.search(r'module (\w+)', verilog_str)
+    assert re_search is not None, 'Did not find module!'
     assert re_search.group(1) == test_override_entity_name, (
         f'Module name should be {test_override_entity_name}, but is {re_search.group(1)}'
     )
 
     md_str = reg.to_md()
-    re_search = re.search('# (\w+) Register Definitions', md_str)
+    re_search = re.search(r'# (\w+) Register Definitions', md_str)
+    assert re_search is not None, 'Did not find Register Definition in documentation!'
     assert re_search.group(1) == test_override_entity_name, (
         f'Markdown title should be {test_override_entity_name}, but is {re_search.group(1)}'
     )
