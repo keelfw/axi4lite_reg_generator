@@ -11,5 +11,5 @@
         "ms-python.vscode-pylance",
         "puorc.awesome-vhdl"
     ],
-    "postCreateCommand": "pre-commit install"
+    "postCreateCommand": "poetry run pre-commit install"
 }
