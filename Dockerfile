@@ -17,6 +17,7 @@ RUN apt-get -y update && \
     python3-dev \
     python3-pip \
     python-is-python3 \
+    git \
     iverilog
 
 RUN pip install --no-cache-dir pipx && \
