@@ -5,7 +5,8 @@ WORKDIR /reg
 ENV DEBIAN_FRONTEND=noninteractive \
     PIPX_HOME="/usr/local/pipx" \
     PIPX_BIN_DIR="/usr/local/bin" \
-    PATH="$PIPX_HOME/bin:$POETRY_HOME/bin:$PATH" \
+    PATH="$PIPX_HOME/bin:$PIPX_HOME/bin:$PATH" \
+    POETRY_VIRTUALENVS_PATH="~/.venv"
     POETRY_VIRTUALENVS_IN_PROJECT=false \
     POETRY_NO_INTERACTION=1
 
