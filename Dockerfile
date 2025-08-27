@@ -1,6 +1,6 @@
 FROM ghdl/ghdl:ubuntu22-mcode
 
-WORKDIR /workspaces
+WORKDIR /reg
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIPX_HOME="/usr/local/pipx" \
@@ -22,7 +22,7 @@ RUN apt-get -y update && \
 RUN pip install --no-cache-dir pipx && \
     pipx install poetry
 
-COPY ./ /workspaces/
+COPY ./ /reg/
 
 RUN poetry install --with dev --no-interaction
 
