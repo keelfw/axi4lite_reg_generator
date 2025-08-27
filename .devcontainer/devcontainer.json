@@ -11,5 +11,5 @@
         "ms-python.vscode-pylance",
         "puorc.awesome-vhdl"
     ],
-    "postCreateCommand": "apt-get install -y git && pre-commit install"
+    "postCreateCommand": "apt install -y git && poetry install --no-interaction && poetry run pre-commit install"
 }
