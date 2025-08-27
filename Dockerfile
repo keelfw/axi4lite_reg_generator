@@ -1,6 +1,6 @@
 FROM ghdl/ghdl:ubuntu22-mcode
 
-WORKDIR /workspaces
+WORKDIR /workspaces/axi4lite_reg_generator
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIPX_HOME="/usr/local/pipx" \
