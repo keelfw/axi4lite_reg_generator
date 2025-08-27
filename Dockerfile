@@ -1,12 +1,11 @@
 FROM ghdl/ghdl:ubuntu22-mcode
 
-WORKDIR /reg
+WORKDIR /workspaces
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIPX_HOME="/usr/local/pipx" \
     PIPX_BIN_DIR="/usr/local/bin" \
     PATH="$PIPX_HOME/bin:$PIPX_HOME/bin:$PATH" \
-    POETRY_VIRTUALENVS_PATH="~/.venv" \
     POETRY_VIRTUALENVS_IN_PROJECT=false \
     POETRY_NO_INTERACTION=1
 
@@ -24,7 +23,7 @@ RUN apt-get -y update && \
 RUN pip install --no-cache-dir pipx && \
     pipx install poetry
 
-COPY ./ /reg/
+COPY ./ /workspaces/
 
 RUN poetry install --with dev --no-interaction
 
