@@ -26,7 +26,6 @@ RUN pip install --no-cache-dir pipx && \
 COPY ./ /reg/
 
 RUN poetry install --with dev --no-interaction
-RUN poetry run pre-commit install
 
 CMD ["sleep", "infinity"]
 
