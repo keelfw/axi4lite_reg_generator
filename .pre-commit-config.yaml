@@ -10,7 +10,7 @@ repos:
         name: Create Examples
         entry: >
           bash -c "
-          poetry run python -m axi4lite_reg_generator example/inputs/example.json --output example/outputs/example &&
+          uv run python -m axi4lite_reg_generator example/inputs/example.json --output example/outputs/example &&
           git add example/outputs/* example/inputs/*
           "
         language: system

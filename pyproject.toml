@@ -3,49 +3,42 @@ name = "axi4lite_reg_generator"
 dynamic = ["version"]
 description = "Template based VHDL register generator"
 authors = [
-    { name = "Kyle O'Brien", email = "<kyle@keelfw.com>" }
+    { name = "Kyle O'Brien", email = "kyle@keelfw.com" }
 ]
-license = "lgpl"
+license = { text = "LGPL" }
 readme = "README.md"
-packages = [
-    { include = "axi4lite_reg_generator" }
-]
 requires-python = ">=3.9"
+dependencies = [
+    "Jinja2>=3.1.4",
+    "schema>=0.7.7",
+    "argparse>=1.4.0",
+]
 
-[tool.poetry]
-version = "0.0.0"
-
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
-style = "semver"
-
-[tool.poetry.dependencies]
-python = "^3.9"
-Jinja2 = "^3.1.4"
-schema = "^0.7.7"
-argparse = "^1.4.0"
-
-[tool.poetry.scripts]
+[project.scripts]
 test = "pytest:main"
 axi4lite_reg_generator = "axi4lite_reg_generator.__main__:main"
 
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^4.1.0"
-ruff = "^0.9.3"
-coverage = "^7.3.2"
-pytest-cov = "^4.1.0"
-pytest = "^7.4.3"
-cocotb = "^1.9.1"
-cocotb-bus = "^0.2.1"
-cocotb-test = "^0.2.5"
-
-[tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=4.1.0",
+    "ruff>=0.9.3",
+    "coverage>=7.3.2",
+    "pytest-cov>=4.1.0",
+    "pytest>=7.4.3",
+    "cocotb>=1.9.1",
+    "cocotb-bus>=0.2.1",
+    "cocotb-test>=0.2.5",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["axi4lite_reg_generator"]
 
 [tool.coverage.run]
 branch = true

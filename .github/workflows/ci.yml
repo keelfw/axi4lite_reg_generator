@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
-      - 35-resolve-failing-action-for-test_rtl # temporary testing branch
+      - 41-migrate-from-poetry-to-uv-package-management # temporary testing branch
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
