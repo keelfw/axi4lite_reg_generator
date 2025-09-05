@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
-      - 35-resolve-failing-action-for-test_rtl # temporary testing branch
+      - 41-migrate-from-poetry-to-uv-package-management # temporary testing branch
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
@@ -35,11 +35,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install --no-cache-dir pipx
         pipx ensurepath
-        pipx install poetry
+        pipx install uv
         # Handle potential compatibility issues with newer Python versions
-        poetry install || poetry install --no-dev
+        uv sync --extra dev
     - name: Run tests
-      run: poetry run pytest test/test_regdef.py test/test_argparse.py test/test_validate.py
+      run: uv run pytest test/test_regdef.py test/test_argparse.py test/test_validate.py
       continue-on-error: ${{ matrix.experimental || false }}
     - name: Upload test results for experimental versions
       if: matrix.experimental && always()
@@ -57,4 +57,4 @@ jobs:
     - name: Build Docker image
       run: docker build -t reg_test -f Dockerfile .
     - name: Run tests
-      run: docker run reg_test poetry run pytest
+      run: docker run reg_test uv run pytest

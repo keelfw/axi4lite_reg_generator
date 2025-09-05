@@ -5,9 +5,7 @@ WORKDIR /reg
 ENV DEBIAN_FRONTEND=noninteractive \
     PIPX_HOME="/usr/local/pipx" \
     PIPX_BIN_DIR="/usr/local/bin" \
-    PATH="$PIPX_HOME/bin:$PIPX_HOME/bin:$PATH" \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1
+    PATH="$PIPX_HOME/bin:$PIPX_HOME/bin:$PATH"
 
 # Install packages
 RUN apt-get -y update && \
@@ -20,11 +18,11 @@ RUN apt-get -y update && \
     iverilog
 
 RUN pip install --no-cache-dir pipx && \
-    pipx install poetry
+    pipx install uv
 
 COPY ./ /reg/
 
-RUN poetry install --no-interaction
+RUN uv sync --extra dev
 
 CMD ["sleep", "infinity"]
 
