@@ -1,6 +1,6 @@
 [project]
 name = "axi4lite_reg_generator"
-dynamic = ["version"]
+version = "1.3.3"
 description = "Template based VHDL register generator"
 authors = [
     { name = "Kyle O'Brien", email = "kyle@keelfw.com" }
@@ -31,11 +31,8 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.hatch.version]
-source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["axi4lite_reg_generator"]
