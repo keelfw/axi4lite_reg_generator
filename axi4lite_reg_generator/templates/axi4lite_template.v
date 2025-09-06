@@ -29,8 +29,8 @@ module {{ entity_name }} #(
   parameter ADDRESS_APERTURE = 8,
   parameter REGISTER_INPUTS = 0
 )(
-  input  wire                         REGS_ACLK,
-  input  wire                         REGS_ARESETN,
+  input  wire                         regs_aclk,
+  input  wire                         regs_aresetn,
   // Registers
   {% for reg in regs -%}
   {% if reg['reg_type'] == 'ro' or reg['reg_type'] == 'custom' -%}
@@ -44,35 +44,41 @@ module {{ entity_name }} #(
   {% endif -%}
   {% endfor %}  
   // Write Address Channel
-  input  wire                        REGS_AWVALID,
-  output reg                         REGS_AWREADY,
-  input  wire [ADDRESS_W-1:0]        REGS_AWADDR,
-  input  wire [2:0]                  REGS_AWPROT,
+  input  wire                        regs_awvalid,
+  output reg                         regs_awready,
+  input  wire [ADDRESS_W-1:0]        regs_awaddr,
+  input  wire [2:0]                  regs_awprot,
   // Write Data Channel
-  input  wire                        REGS_WVALID,
-  output wire                        REGS_WREADY,
-  input  wire [31:0]                 REGS_WDATA,
-  input  wire [3:0]                  REGS_WSTRB,
+  input  wire                        regs_wvalid,
+  output wire                        regs_wready,
+  input  wire [31:0]                 regs_wdata,
+  input  wire [3:0]                  regs_wstrb,
   // Write Response Channel
-  output reg                         REGS_BVALID,
-  input  wire                        REGS_BREADY,
-  output reg  [1:0]                  REGS_BRESP,
+  output reg                         regs_bvalid,
+  input  wire                        regs_bready,
+  output reg  [1:0]                  regs_bresp,
   // Read Address Channel
-  input  wire                        REGS_ARVALID,
-  output reg                         REGS_ARREADY,
-  input  wire [ADDRESS_W-1:0]        REGS_ARADDR,
-  input  wire [2:0]                  REGS_ARPROT,
+  input  wire                        regs_arvalid,
+  output reg                         regs_arready,
+  input  wire [ADDRESS_W-1:0]        regs_araddr,
+  input  wire [2:0]                  regs_arprot,
   // Read Data Channel
-  output wire                        REGS_RVALID,
-  input  wire                        REGS_RREADY,
-  output reg  [31:0]                 REGS_RDATA,
-  output reg  [1:0]                  REGS_RRESP
+  output wire                        regs_rvalid,
+  input  wire                        regs_rready,
+  output reg  [31:0]                 regs_rdata,
+  output reg  [1:0]                  regs_rresp
 );
 
+// AXI Response Constants
 localparam [1:0] AXI_RESP_OKAY   = 2'b00;
 localparam [1:0] AXI_RESP_EXOKAY = 2'b01;
 localparam [1:0] AXI_RESP_SLVERR = 2'b10;
 localparam [1:0] AXI_RESP_DECERR = 2'b11;
+
+// Register addresses
+{% for reg in regs -%}
+localparam [ADDRESS_APERTURE-1:0] REG_{{ reg['name'] }}_ADDR = {{ reg['addr_offset'] }};
+{% endfor %}
 
 // Register signal declarations
 {% for reg in regs -%}
@@ -109,7 +115,7 @@ reg [1:0] rd_resp;
 
 // Handle inputs
 
-always @* begin
+always @(*) begin
 {% for reg in regs -%}
 {% if reg['reg_type'] == 'rw' -%}
   REG_{{ reg['name'] }}_R <= REG_{{ reg['name'] }}_W;
@@ -119,7 +125,7 @@ end
 
 generate
   if (REGISTER_INPUTS > 0) begin : reg_inputs_g
-    always @(posedge REGS_ACLK) begin
+    always @(posedge regs_aclk) begin
       {% for reg in regs -%}
       {% if reg['reg_type'] == 'ro' or reg['reg_type'] == 'custom' -%}
         REG_{{ reg['name'] }}_R <= R_{{ reg['name'] }}_I; 
@@ -127,7 +133,7 @@ generate
       {% endfor %}
     end
   end else begin : con_inputs_g
-    always @* begin
+    always @(*) begin
       {% for reg in regs -%}
       {% if reg['reg_type'] != 'rw' -%}
         REG_{{ reg['name'] }}_R <= R_{{ reg['name'] }}_I;
@@ -144,43 +150,43 @@ endgenerate
 {% endif -%}
 {% endfor %}
 // Connect AXI-Lite ready/valid control signals
-assign REGS_WREADY = w_ready;
-assign REGS_RVALID = r_valid;
+assign regs_wready = w_ready;
+assign regs_rvalid = r_valid;
 
 // Write FSM
-always @(posedge REGS_ACLK) begin
-  if (!REGS_ARESETN) begin
+always @(posedge regs_aclk) begin
+  if (!regs_aresetn) begin
     state_w <= W_STATE_RST;
-    REGS_AWREADY <= 0;
+    regs_awready <= 0;
     w_ready <= 0;
-    REGS_BVALID <= 0;
+    regs_bvalid <= 0;
   end
   else begin
     case (state_w)
       W_STATE_RST: begin
         state_w <= W_STATE_WAIT4ADDR;
-        REGS_AWREADY <= 1;
+        regs_awready <= 1;
       end
       W_STATE_WAIT4ADDR: begin
-        if (REGS_AWVALID) begin
+        if (regs_awvalid) begin
           state_w <= W_STATE_WAIT4DATA;
-          REGS_AWREADY <= 0;
+          regs_awready <= 0;
           w_ready <= 1;
-          address_wr <= REGS_AWADDR[ADDRESS_APERTURE-1:0];
+          address_wr <= regs_awaddr[ADDRESS_APERTURE-1:0];
         end
       end
       W_STATE_WAIT4DATA: begin
-        if (REGS_WVALID) begin
+        if (regs_wvalid) begin
           state_w <= W_STATE_WAIT4RESP;
           w_ready <= 0;
-          REGS_BVALID <= 1;
+          regs_bvalid <= 1;
         end
       end
       W_STATE_WAIT4RESP: begin
-        if (REGS_BREADY) begin
+        if (regs_bready) begin
           state_w <= W_STATE_WAIT4ADDR;
-          REGS_BVALID <= 0;
-          REGS_AWREADY <= 1;
+          regs_bvalid <= 0;
+          regs_awready <= 1;
         end
       end
       default: begin
@@ -191,23 +197,23 @@ always @(posedge REGS_ACLK) begin
 end
 
 // Read FSM
-always @(posedge REGS_ACLK) begin
-  if (!REGS_ARESETN) begin
+always @(posedge regs_aclk) begin
+  if (!regs_aresetn) begin
     state_r <= R_STATE_RST;
-    REGS_ARREADY <= 0;
+    regs_arready <= 0;
     r_valid <= 0;
   end
   else begin
     case (state_r)
       R_STATE_RST: begin
         state_r <= R_STATE_WAIT4ADDR;
-        REGS_ARREADY <= 1;
+        regs_arready <= 1;
       end
       R_STATE_WAIT4ADDR: begin
-        if (REGS_ARVALID) begin
+        if (regs_arvalid) begin
           state_r <= R_STATE_WAITREG;
-          REGS_ARREADY <= 0;
-          address_rd <= REGS_ARADDR[ADDRESS_APERTURE-1:0];
+          regs_arready <= 0;
+          address_rd <= regs_araddr[ADDRESS_APERTURE-1:0];
         end
       end
       R_STATE_WAITREG: begin
@@ -215,10 +221,10 @@ always @(posedge REGS_ACLK) begin
         r_valid <= 1;
       end
       R_STATE_WAIT4DATA: begin
-        if (REGS_RREADY == 1) begin
+        if (regs_rready == 1) begin
           state_r <= R_STATE_WAIT4ADDR;
           r_valid <= 0;
-          REGS_ARREADY <= 1;
+          regs_arready <= 1;
         end
       end
       default: begin
@@ -229,8 +235,8 @@ always @(posedge REGS_ACLK) begin
 end
 
 // Write process
-always @(posedge REGS_ACLK) begin
-  if (!REGS_ARESETN) begin
+always @(posedge regs_aclk) begin
+  if (!regs_aresetn) begin
     {%- for reg in regs -%}
     {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
     REG_{{ reg['name'] }}_W <= {{ reg|default_val_v }};
@@ -248,32 +254,32 @@ always @(posedge REGS_ACLK) begin
     {%- endif %}
     {%- endif %}
     {%- endfor %}
-    if (REGS_WVALID && w_ready) begin
+    if (regs_wvalid && w_ready) begin
       {% for reg in regs -%}
       {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
-      if (address_wr == {{ reg['addr_offset'] }}) begin
+      if (address_wr == REG_{{ reg['name'] }}_ADDR) begin
         {%- if reg['use_upd_pulse'] %}
         R_{{ reg['name'] }}_O_upd <= 1;
         {%- endif %}
-        REGS_BRESP <= AXI_RESP_OKAY;
+        regs_bresp <= AXI_RESP_OKAY;
         {%- for s in range(strobe_size) %}
         {%- if 8*s < reg['bits']|count_bits %}
-        if (REGS_WSTRB[{{s}}] == 1) begin
-          REG_{{ reg['name'] }}_W[{{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }}:{{ 8*s }}] <= REGS_WDATA[{{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }}:{{ 8*s }}];
+        if (regs_wstrb[{{s}}] == 1) begin
+          REG_{{ reg['name'] }}_W[{{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }}:{{ 8*s }}] <= regs_wdata[{{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }}:{{ 8*s }}];
         end
         {%- endif %}
         {%- endfor %}
       end else {% endif -%}{% endfor -%} begin
-        REGS_BRESP <= AXI_RESP_SLVERR;
+        regs_bresp <= AXI_RESP_SLVERR;
       end
     end
   end
 end
 
-always @* begin
+always @(*) begin
   case (address_rd)
     {% for reg in regs -%}
-    {{ reg['addr_offset'] }}: begin
+    REG_{{ reg['name'] }}_ADDR: begin
       {% if reg['bits']|count_bits < data_size %}
       rd_mux = {{'{ {'}}{{ data_size - reg['bits']|count_bits }}{1'b0{{'}}'}}, REG_{{ reg['name'] }}_R };
       {% else %}
@@ -290,12 +296,12 @@ always @* begin
 end
 
 // Read process
-always @(posedge REGS_ACLK) begin
-  if (!REGS_ARESETN) begin
+always @(posedge regs_aclk) begin
+  if (!regs_aresetn) begin
   end else begin
     if (state_r == R_STATE_WAITREG) begin
-      REGS_RDATA <= rd_mux;
-      REGS_RRESP <= rd_resp;
+      regs_rdata <= rd_mux;
+      regs_rresp <= rd_resp;
     end
   end
 end

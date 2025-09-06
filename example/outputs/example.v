@@ -29,8 +29,8 @@ module example #(
   parameter ADDRESS_APERTURE = 8,
   parameter REGISTER_INPUTS = 0
 )(
-  input  wire                         REGS_ACLK,
-  input  wire                         REGS_ARESETN,
+  input  wire                         regs_aclk,
+  input  wire                         regs_aresetn,
   // Registers
   input wire [31:0] R_Test_Register_I,
   output wire [31:0] R_Scratch_Register_O,
@@ -40,35 +40,42 @@ module example #(
   output reg R_Register_with_Fields_O_upd,
     
   // Write Address Channel
-  input  wire                        REGS_AWVALID,
-  output reg                         REGS_AWREADY,
-  input  wire [ADDRESS_W-1:0]        REGS_AWADDR,
-  input  wire [2:0]                  REGS_AWPROT,
+  input  wire                        regs_awvalid,
+  output reg                         regs_awready,
+  input  wire [ADDRESS_W-1:0]        regs_awaddr,
+  input  wire [2:0]                  regs_awprot,
   // Write Data Channel
-  input  wire                        REGS_WVALID,
-  output wire                        REGS_WREADY,
-  input  wire [31:0]                 REGS_WDATA,
-  input  wire [3:0]                  REGS_WSTRB,
+  input  wire                        regs_wvalid,
+  output wire                        regs_wready,
+  input  wire [31:0]                 regs_wdata,
+  input  wire [3:0]                  regs_wstrb,
   // Write Response Channel
-  output reg                         REGS_BVALID,
-  input  wire                        REGS_BREADY,
-  output reg  [1:0]                  REGS_BRESP,
+  output reg                         regs_bvalid,
+  input  wire                        regs_bready,
+  output reg  [1:0]                  regs_bresp,
   // Read Address Channel
-  input  wire                        REGS_ARVALID,
-  output reg                         REGS_ARREADY,
-  input  wire [ADDRESS_W-1:0]        REGS_ARADDR,
-  input  wire [2:0]                  REGS_ARPROT,
+  input  wire                        regs_arvalid,
+  output reg                         regs_arready,
+  input  wire [ADDRESS_W-1:0]        regs_araddr,
+  input  wire [2:0]                  regs_arprot,
   // Read Data Channel
-  output wire                        REGS_RVALID,
-  input  wire                        REGS_RREADY,
-  output reg  [31:0]                 REGS_RDATA,
-  output reg  [1:0]                  REGS_RRESP
+  output wire                        regs_rvalid,
+  input  wire                        regs_rready,
+  output reg  [31:0]                 regs_rdata,
+  output reg  [1:0]                  regs_rresp
 );
 
+// AXI Response Constants
 localparam [1:0] AXI_RESP_OKAY   = 2'b00;
 localparam [1:0] AXI_RESP_EXOKAY = 2'b01;
 localparam [1:0] AXI_RESP_SLVERR = 2'b10;
 localparam [1:0] AXI_RESP_DECERR = 2'b11;
+
+// Register addresses
+localparam [ADDRESS_APERTURE-1:0] REG_Test_Register_ADDR = 0;
+localparam [ADDRESS_APERTURE-1:0] REG_Scratch_Register_ADDR = 4;
+localparam [ADDRESS_APERTURE-1:0] REG_Register_with_Fields_ADDR = 64;
+
 
 // Register signal declarations
 reg [31:0] REG_Test_Register_R;
@@ -108,20 +115,20 @@ reg [1:0] rd_resp;
 
 // Handle inputs
 
-always @* begin
+always @(*) begin
 REG_Scratch_Register_R <= REG_Scratch_Register_W;
 
 end
 
 generate
   if (REGISTER_INPUTS > 0) begin : reg_inputs_g
-    always @(posedge REGS_ACLK) begin
+    always @(posedge regs_aclk) begin
       REG_Test_Register_R <= R_Test_Register_I; 
       REG_Register_with_Fields_R <= R_Register_with_Fields_I; 
       
     end
   end else begin : con_inputs_g
-    always @* begin
+    always @(*) begin
       REG_Test_Register_R <= R_Test_Register_I;
       REG_Register_with_Fields_R <= R_Register_with_Fields_I;
       
@@ -134,43 +141,43 @@ assign R_Scratch_Register_O = REG_Scratch_Register_W;
 assign R_Register_with_Fields_O = REG_Register_with_Fields_W;
 
 // Connect AXI-Lite ready/valid control signals
-assign REGS_WREADY = w_ready;
-assign REGS_RVALID = r_valid;
+assign regs_wready = w_ready;
+assign regs_rvalid = r_valid;
 
 // Write FSM
-always @(posedge REGS_ACLK) begin
-  if (!REGS_ARESETN) begin
+always @(posedge regs_aclk) begin
+  if (!regs_aresetn) begin
     state_w <= W_STATE_RST;
-    REGS_AWREADY <= 0;
+    regs_awready <= 0;
     w_ready <= 0;
-    REGS_BVALID <= 0;
+    regs_bvalid <= 0;
   end
   else begin
     case (state_w)
       W_STATE_RST: begin
         state_w <= W_STATE_WAIT4ADDR;
-        REGS_AWREADY <= 1;
+        regs_awready <= 1;
       end
       W_STATE_WAIT4ADDR: begin
-        if (REGS_AWVALID) begin
+        if (regs_awvalid) begin
           state_w <= W_STATE_WAIT4DATA;
-          REGS_AWREADY <= 0;
+          regs_awready <= 0;
           w_ready <= 1;
-          address_wr <= REGS_AWADDR[ADDRESS_APERTURE-1:0];
+          address_wr <= regs_awaddr[ADDRESS_APERTURE-1:0];
         end
       end
       W_STATE_WAIT4DATA: begin
-        if (REGS_WVALID) begin
+        if (regs_wvalid) begin
           state_w <= W_STATE_WAIT4RESP;
           w_ready <= 0;
-          REGS_BVALID <= 1;
+          regs_bvalid <= 1;
         end
       end
       W_STATE_WAIT4RESP: begin
-        if (REGS_BREADY) begin
+        if (regs_bready) begin
           state_w <= W_STATE_WAIT4ADDR;
-          REGS_BVALID <= 0;
-          REGS_AWREADY <= 1;
+          regs_bvalid <= 0;
+          regs_awready <= 1;
         end
       end
       default: begin
@@ -181,23 +188,23 @@ always @(posedge REGS_ACLK) begin
 end
 
 // Read FSM
-always @(posedge REGS_ACLK) begin
-  if (!REGS_ARESETN) begin
+always @(posedge regs_aclk) begin
+  if (!regs_aresetn) begin
     state_r <= R_STATE_RST;
-    REGS_ARREADY <= 0;
+    regs_arready <= 0;
     r_valid <= 0;
   end
   else begin
     case (state_r)
       R_STATE_RST: begin
         state_r <= R_STATE_WAIT4ADDR;
-        REGS_ARREADY <= 1;
+        regs_arready <= 1;
       end
       R_STATE_WAIT4ADDR: begin
-        if (REGS_ARVALID) begin
+        if (regs_arvalid) begin
           state_r <= R_STATE_WAITREG;
-          REGS_ARREADY <= 0;
-          address_rd <= REGS_ARADDR[ADDRESS_APERTURE-1:0];
+          regs_arready <= 0;
+          address_rd <= regs_araddr[ADDRESS_APERTURE-1:0];
         end
       end
       R_STATE_WAITREG: begin
@@ -205,10 +212,10 @@ always @(posedge REGS_ACLK) begin
         r_valid <= 1;
       end
       R_STATE_WAIT4DATA: begin
-        if (REGS_RREADY == 1) begin
+        if (regs_rready == 1) begin
           state_r <= R_STATE_WAIT4ADDR;
           r_valid <= 0;
-          REGS_ARREADY <= 1;
+          regs_arready <= 1;
         end
       end
       default: begin
@@ -219,8 +226,8 @@ always @(posedge REGS_ACLK) begin
 end
 
 // Write process
-always @(posedge REGS_ACLK) begin
-  if (!REGS_ARESETN) begin
+always @(posedge regs_aclk) begin
+  if (!regs_aresetn) begin
     REG_Scratch_Register_W <= 32'b00000000000000000000000000000000;
     R_Scratch_Register_O_upd <= 0;
     REG_Register_with_Fields_W <= 15'b011111111110000;
@@ -229,53 +236,53 @@ always @(posedge REGS_ACLK) begin
   else begin
     R_Scratch_Register_O_upd <= 0;
     R_Register_with_Fields_O_upd <= 0;
-    if (REGS_WVALID && w_ready) begin
-      if (address_wr == 4) begin
+    if (regs_wvalid && w_ready) begin
+      if (address_wr == REG_Scratch_Register_ADDR) begin
         R_Scratch_Register_O_upd <= 1;
-        REGS_BRESP <= AXI_RESP_OKAY;
-        if (REGS_WSTRB[0] == 1) begin
-          REG_Scratch_Register_W[7:0] <= REGS_WDATA[7:0];
+        regs_bresp <= AXI_RESP_OKAY;
+        if (regs_wstrb[0] == 1) begin
+          REG_Scratch_Register_W[7:0] <= regs_wdata[7:0];
         end
-        if (REGS_WSTRB[1] == 1) begin
-          REG_Scratch_Register_W[15:8] <= REGS_WDATA[15:8];
+        if (regs_wstrb[1] == 1) begin
+          REG_Scratch_Register_W[15:8] <= regs_wdata[15:8];
         end
-        if (REGS_WSTRB[2] == 1) begin
-          REG_Scratch_Register_W[23:16] <= REGS_WDATA[23:16];
+        if (regs_wstrb[2] == 1) begin
+          REG_Scratch_Register_W[23:16] <= regs_wdata[23:16];
         end
-        if (REGS_WSTRB[3] == 1) begin
-          REG_Scratch_Register_W[31:24] <= REGS_WDATA[31:24];
+        if (regs_wstrb[3] == 1) begin
+          REG_Scratch_Register_W[31:24] <= regs_wdata[31:24];
         end
-      end else if (address_wr == 64) begin
+      end else if (address_wr == REG_Register_with_Fields_ADDR) begin
         R_Register_with_Fields_O_upd <= 1;
-        REGS_BRESP <= AXI_RESP_OKAY;
-        if (REGS_WSTRB[0] == 1) begin
-          REG_Register_with_Fields_W[7:0] <= REGS_WDATA[7:0];
+        regs_bresp <= AXI_RESP_OKAY;
+        if (regs_wstrb[0] == 1) begin
+          REG_Register_with_Fields_W[7:0] <= regs_wdata[7:0];
         end
-        if (REGS_WSTRB[1] == 1) begin
-          REG_Register_with_Fields_W[14:8] <= REGS_WDATA[14:8];
+        if (regs_wstrb[1] == 1) begin
+          REG_Register_with_Fields_W[14:8] <= regs_wdata[14:8];
         end
       end else begin
-        REGS_BRESP <= AXI_RESP_SLVERR;
+        regs_bresp <= AXI_RESP_SLVERR;
       end
     end
   end
 end
 
-always @* begin
+always @(*) begin
   case (address_rd)
-    0: begin
+    REG_Test_Register_ADDR: begin
       
       rd_mux = REG_Test_Register_R;
       
       rd_resp = AXI_RESP_OKAY;
     end
-    4: begin
+    REG_Scratch_Register_ADDR: begin
       
       rd_mux = REG_Scratch_Register_R;
       
       rd_resp = AXI_RESP_OKAY;
     end
-    64: begin
+    REG_Register_with_Fields_ADDR: begin
       
       rd_mux = { {17{1'b0}}, REG_Register_with_Fields_R };
       
@@ -290,16 +297,16 @@ always @* begin
 end
 
 // Read process
-always @(posedge REGS_ACLK) begin
-  if (!REGS_ARESETN) begin
+always @(posedge regs_aclk) begin
+  if (!regs_aresetn) begin
   end else begin
     if (state_r == R_STATE_WAITREG) begin
-      REGS_RDATA <= rd_mux;
-      REGS_RRESP <= rd_resp;
+      regs_rdata <= rd_mux;
+      regs_rresp <= rd_resp;
     end
   end
 end
 
 endmodule
 
-// SHA-256: cacd1555c75a93be2b0d983dad92c24314a20dc859e827711ee5b5636905a90a
+// SHA-256: e9a959f9df057e2d871b6490068bd826b8f604bff0e062ddcba663a4995d78a7

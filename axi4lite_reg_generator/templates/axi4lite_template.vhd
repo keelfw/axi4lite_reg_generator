@@ -77,10 +77,16 @@ port (
 end entity {{ entity_name }};
 
 architecture rtl of {{ entity_name }} is
+  -- AXI Response Constants
   constant AXI_RESP_OKAY   : std_logic_vector(1 downto 0) := "00";
   constant AXI_RESP_EXOKAY : std_logic_vector(1 downto 0) := "01";
   constant AXI_RESP_SLVERR : std_logic_vector(1 downto 0) := "10";
   constant AXI_RESP_DECERR : std_logic_vector(1 downto 0) := "11";
+
+  -- Register addresses
+  {% for reg in regs -%}
+  constant REG_{{ reg['name'] }}_ADDR : std_logic_vector(ADDRESS_APERTURE-1 downto 0) := std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE));
+  {% endfor %}
   
   -- Register signal declarations
   {% for reg in regs -%}
@@ -241,7 +247,7 @@ begin
         if REGS_WVALID = '1' and w_ready = '1' then
           {% for reg in regs -%}
           {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
-          if address_wr = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) then
+          if address_wr = REG_{{ reg['name'] }}_ADDR then
             {%- if reg['use_upd_pulse'] %}
             R_{{ reg['name'] }}_O_upd <= '1';
             {%- endif %}
@@ -263,11 +269,11 @@ begin
 
   rd_mux <= {% for reg in regs -%}
     {%- if reg['bits']|count_bits != data_size %}
-    "{%- for i in range(data_size - reg['bits']|count_bits) %}0{%- endfor -%}" & {% endif -%}REG_{{ reg['name'] }}_R when address_rd = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) else {% endfor -%}
+    "{%- for i in range(data_size - reg['bits']|count_bits) %}0{%- endfor -%}" & {% endif -%}REG_{{ reg['name'] }}_R when address_rd = REG_{{ reg['name'] }}_ADDR else {% endfor -%}
     (others=>'0');
 
   rd_resp <= {% for reg in regs -%}
-    AXI_RESP_OKAY when address_rd = std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE)) else {% endfor -%}
+    AXI_RESP_OKAY when address_rd = REG_{{ reg['name'] }}_ADDR else {% endfor -%}
     AXI_RESP_SLVERR;
 
   read_p : process (REGS_ACLK) is
