@@ -1,4 +1,4 @@
-# Copyright (C) 2024 KEELFW
+# Copyright (C) 2025 KEELFW
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -20,6 +20,7 @@ import axi4lite_reg_generator
 import subprocess
 import cocotb_test.simulator
 import uuid
+import pytest
 
 test_dir = os.path.dirname(__file__)
 json_file_path = os.path.join(test_dir, 'test_json.json')
@@ -68,12 +69,13 @@ def test_basic_vhd():
     )
 
 
-def test_vhdlsim_noreg():
+@pytest.mark.parametrize('register_inputs', [False, True])
+def test_vhdlsim(register_inputs):
     """Test VHDL RTL simulation of generated register file.
 
     Tests:
         1. Generates VHDL code
-        2. Runs cocotb simulation with inputs NOT registered
+        2. Runs cocotb simulation
         3. Verifies simulation completes successfully
     """
     reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
@@ -87,28 +89,5 @@ def test_vhdlsim_noreg():
         toplevel='reg_file',
         module='test.test_sim',
         simulator='ghdl',
-        parameters=dict(REGISTER_INPUTS=False),
-    )
-
-
-def test_vhdlsim_reg():
-    """Test VHDL RTL simulation of generated register file.
-
-    Tests:
-        1. Generates VHDL code
-        2. Runs cocotb simulation with inputs registered
-        3. Verifies simulation completes successfully
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
-    test_file = os.path.join(test_dir, '_test.vhd')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_vhdl())
-
-    cocotb_test.simulator.run(
-        vhdl_sources=['./test/_test.vhd'],
-        toplevel_lang='vhdl',
-        toplevel='reg_file',
-        module='test.test_sim',
-        simulator='ghdl',
-        parameters=dict(REGISTER_INPUTS=True),
+        parameters=dict(REGISTER_INPUTS=register_inputs),
     )

@@ -1,5 +1,5 @@
 # axi4lite_reg_generator
-Python tool to generate a VHDL and Verilog register file with an AXI4-Lite interface from JSON.
+Python tool to generate VHDL, Verilog, and System Verilog register file with an AXI4-Lite interface from JSON.
 
 The tool also creates detailed register documentation that can be used in a hardware / software ICD.
 
@@ -111,7 +111,7 @@ Each field has its own unique name, number of bits, and optional default value. 
 | reg4  | 3..0   | 0       |
 
 # Automated Documentation
-When creating the register file, a markdown file with the register configuration is also created. This file will be saved in the same output directory as the VHDL and Verilog files.
+When creating the register file, a markdown file with the register configuration is also created. This file will be saved in the same output directory as the VHDL, Verilog, and System Verilog files.
 
 # Heirarchy
 
@@ -162,14 +162,14 @@ This results in a register map with `Heir_Register_Top` at address 0 and heirarc
 When using heirarchy, the subordinate heirarchical names are prepended with the parent names. By default, they are separated using the `_` character, but this can be changed in the configuration by setting the `instance_separator` value. Prepending the parent prevents naming conflicts in the generated RTL.
 
 # Hash Verification
-Each generated file (VHDL, Verilog, and Markdown documentation) contains a SHA-256 hash to prove the file has not been modified. The hash is put as a comment at the end of each file.
+Each generated file (VHDL, Verilog, System Verilog, and Markdown documentation) contains a SHA-256 hash to prove the file has not been modified. The hash is put as a comment at the end of each file.
 
 VHDL Example:
 ```vhdl
 -- SHA-256: 1e0101dac8c2527f28c65a8e942557c74d56b87be035ccb03b7be79305ce5527
 ```
 
-Verilog Example:
+Verilog / System Verilog Example:
 ```verilog
 // SHA-256: fa8a530141168f8baa23e2830298d9fde1acff16267d16caf3f8906f469a6361
 ```
@@ -181,13 +181,13 @@ Markdown Example:
 
 To verify the hash you can use the hash validator tool included with this package. To check the validity of the files, run the following command:
 ```bash
-$ axi4lite_reg_generator.validate my_regs.vhd my_regs.v my_regs.md
+$ axi4lite_reg_generator.validate my_regs.vhd my_regs.v my_regs.sv my_regs.md
 ```
 
 This tool will print out whether the hashes are valid or not.
 
 # Instructions to Create Register File
-In a simple example, if you have the json file shown in the example above saved as `my_regs.json`, type the following into the command prompt to create `my_regs.vhd`, `my_regs.v`, and `my_regs.md`.
+In a simple example, if you have the json file shown in the example above saved as `my_regs.json`, type the following into the command prompt to create `my_regs.vhd`, `my_regs.v`, `my_regs.sv`, and `my_regs.md`.
 ```bash
 $ axi4lite_reg_generator my_regs.json -o my_regs
 ```
@@ -202,7 +202,7 @@ This results in the following usage information:
 ```
 usage: axi4lite_reg_generator [-h] -o OUTPUT json_input
 
-Generate a VHDL and Verilog register file with an AXI4-Lite interface from JSON
+Generate VHDL, Verilog, and System Verilog register file with an AXI4-Lite interface from JSON
 
 positional arguments:
   json_input            Register configuration JSON file

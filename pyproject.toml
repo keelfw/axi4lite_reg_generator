@@ -1,6 +1,6 @@
 [project]
 name = "axi4lite_reg_generator"
-version = "1.3.3"
+version = "1.4.0"
 description = "Template based VHDL register generator"
 authors = [
     { name = "Kyle O'Brien", email = "kyle@keelfw.com" }

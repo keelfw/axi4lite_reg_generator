@@ -1,4 +1,4 @@
-# Copyright (C) 2024 KEELFW
+# Copyright (C) 2025 KEELFW
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@ TIMEOUT = (10 * CLK_PERIOD_NS, 'ns')
 
 
 def setup_dut(dut):
-    cocotb.start_soon(Clock(dut.REGS_ACLK, CLK_PERIOD_NS, units='ns').start())
+    cocotb.start_soon(Clock(dut.regs_aclk, CLK_PERIOD_NS, units='ns').start())
 
 
 async def reset(rst, time, units, active_high=False):
@@ -59,38 +59,38 @@ async def basic_readwrite(dut):
     """
 
     # Reset
-    axim = AXI4LiteMaster(dut, 'REGS', dut.REGS_ACLK)
+    axim = AXI4LiteMaster(dut, 'regs', dut.regs_aclk)
     cocotb.start_soon(
-        verify_handshake_single(dut.REGS_ACLK, dut.REGS_AWVALID, dut.REGS_AWREADY, 'AW')
+        verify_handshake_single(dut.regs_aclk, dut.regs_awvalid, dut.regs_awready, 'AW')
     )
     cocotb.start_soon(
-        verify_handshake_single(dut.REGS_ACLK, dut.REGS_WVALID, dut.REGS_WREADY, 'W')
+        verify_handshake_single(dut.regs_aclk, dut.regs_wvalid, dut.regs_wready, 'W')
     )
     cocotb.start_soon(
-        verify_handshake_single(dut.REGS_ACLK, dut.REGS_ARVALID, dut.REGS_ARREADY, 'AR')
+        verify_handshake_single(dut.regs_aclk, dut.regs_arvalid, dut.regs_arready, 'AR')
     )
     cocotb.start_soon(
-        verify_handshake_single(dut.REGS_ACLK, dut.REGS_RVALID, dut.REGS_RREADY, 'R')
+        verify_handshake_single(dut.regs_aclk, dut.regs_rvalid, dut.regs_rready, 'R')
     )
     cocotb.start_soon(
-        verify_handshake_single(dut.REGS_ACLK, dut.REGS_BVALID, dut.REGS_BREADY, 'B')
+        verify_handshake_single(dut.regs_aclk, dut.regs_bvalid, dut.regs_bready, 'B')
     )
     setup_dut(dut)
     dut.R_Test_Register_I.setimmediatevalue(0xFEEDBACE)
     dut.R_Register_with_Fields_I.setimmediatevalue(int(2**12 - 1))
-    cocotb.start_soon(reset(dut.REGS_ARESETN, 5 * CLK_PERIOD_NS, units='ns'))
+    cocotb.start_soon(reset(dut.regs_aresetn, 5 * CLK_PERIOD_NS, units='ns'))
     await Timer(3 * CLK_PERIOD_NS, units='ns')
     dut._log.info('Checking Reset State')
-    assert dut.REGS_AWREADY.value == 0
-    assert dut.REGS_WREADY.value == 0
-    assert dut.REGS_BVALID.value == 0
-    assert dut.REGS_ARREADY.value == 0
-    assert dut.REGS_RVALID.value == 0
-    assert dut.REGS_ARESETN.value == 0
+    assert dut.regs_awready.value == 0
+    assert dut.regs_wready.value == 0
+    assert dut.regs_bvalid.value == 0
+    assert dut.regs_arready.value == 0
+    assert dut.regs_rvalid.value == 0
+    assert dut.regs_aresetn.value == 0
 
-    await RisingEdge(dut.REGS_ARESETN)
+    await RisingEdge(dut.regs_aresetn)
     dut._log.info('Reset Deasserted')
-    await ClockCycles(dut.REGS_ACLK, 5)
+    await ClockCycles(dut.regs_aclk, 5)
 
     # Read Defaults
     dut._log.info('Checking default values')
@@ -103,7 +103,7 @@ async def basic_readwrite(dut):
     await with_timeout(axim.write(4, 0x1234567A), *TIMEOUT)
     await with_timeout(axim.write(64, 0xCCAABB11), *TIMEOUT)
 
-    await ClockCycles(dut.REGS_ACLK, 5)
+    await ClockCycles(dut.regs_aclk, 5)
 
     assert dut.R_Scratch_Register_O.value == 0x1234567A
     assert dut.R_Register_with_Fields_O.value == 0x00003B11
@@ -129,14 +129,14 @@ async def read_invalid(dut):
     """
 
     # Reset
-    axim = AXI4LiteMaster(dut, 'REGS', dut.REGS_ACLK)
+    axim = AXI4LiteMaster(dut, 'regs', dut.regs_aclk)
     setup_dut(dut)
     dut._log.info('DUT Setup Complete')
 
-    await reset(dut.REGS_ARESETN, 5 * CLK_PERIOD_NS, units='ns')
+    await reset(dut.regs_aresetn, 5 * CLK_PERIOD_NS, units='ns')
 
-    await RisingEdge(dut.REGS_ARESETN)
-    await ClockCycles(dut.REGS_ACLK, 5)
+    await RisingEdge(dut.regs_aresetn)
+    await ClockCycles(dut.regs_aclk, 5)
 
     try:
         await with_timeout(axim.read(0x0008), *TIMEOUT)
@@ -158,14 +158,14 @@ async def write_invalid(dut):
     """
 
     # Reset
-    axim = AXI4LiteMaster(dut, 'REGS', dut.REGS_ACLK)
+    axim = AXI4LiteMaster(dut, 'regs', dut.regs_aclk)
     setup_dut(dut)
     dut._log.info('DUT Setup Complete')
 
-    await reset(dut.REGS_ARESETN, 5 * CLK_PERIOD_NS, units='ns')
+    await reset(dut.regs_aresetn, 5 * CLK_PERIOD_NS, units='ns')
 
-    await RisingEdge(dut.REGS_ARESETN)
-    await ClockCycles(dut.REGS_ACLK, 5)
+    await RisingEdge(dut.regs_aresetn)
+    await ClockCycles(dut.regs_aclk, 5)
 
     try:
         await with_timeout(axim.write(0x0008, 0), *TIMEOUT)
@@ -199,14 +199,14 @@ async def write_enables(dut):
         return val
 
     # Reset
-    axim = AXI4LiteMaster(dut, 'REGS', dut.REGS_ACLK)
+    axim = AXI4LiteMaster(dut, 'regs', dut.regs_aclk)
     setup_dut(dut)
     dut._log.info('DUT Setup Complete')
 
-    await reset(dut.REGS_ARESETN, 5 * CLK_PERIOD_NS, units='ns')
+    await reset(dut.regs_aresetn, 5 * CLK_PERIOD_NS, units='ns')
 
-    await RisingEdge(dut.REGS_ARESETN)
-    await ClockCycles(dut.REGS_ACLK, 5)
+    await RisingEdge(dut.regs_aresetn)
+    await ClockCycles(dut.regs_aclk, 5)
 
     for byte_enable in range(16):
         await with_timeout(axim.write(0x0004, 0), *TIMEOUT)
@@ -227,19 +227,19 @@ async def upd_pulse(dut):
     """
 
     # Reset
-    axim = AXI4LiteMaster(dut, 'REGS', dut.REGS_ACLK)
+    axim = AXI4LiteMaster(dut, 'regs', dut.regs_aclk)
     setup_dut(dut)
     dut.R_Test_Register_I.setimmediatevalue(0xFEEDBACE)
     dut.R_Register_with_Fields_I.setimmediatevalue(int(2**12 - 1))
-    cocotb.start_soon(reset(dut.REGS_ARESETN, 5 * CLK_PERIOD_NS, units='ns'))
+    cocotb.start_soon(reset(dut.regs_aresetn, 5 * CLK_PERIOD_NS, units='ns'))
     await Timer(3 * CLK_PERIOD_NS, units='ns')
     dut._log.info('Checking Reset State')
     assert dut.R_Scratch_Register_O_upd == 0
     assert dut.R_Register_with_Fields_O_upd == 0
 
-    await RisingEdge(dut.REGS_ARESETN)
+    await RisingEdge(dut.regs_aresetn)
     dut._log.info('Reset Deasserted')
-    await ClockCycles(dut.REGS_ACLK, 5)
+    await ClockCycles(dut.regs_aclk, 5)
 
     # Read Defaults
     dut._log.info('Checking default values')
@@ -250,38 +250,38 @@ async def upd_pulse(dut):
     dut._log.info('Writing first register')
 
     write_co = cocotb.start_soon(with_timeout(axim.write(4, 0), *TIMEOUT))
-    await RisingEdge(dut.REGS_ACLK)
-    while not (dut.REGS_WVALID == 1 and dut.REGS_WREADY == 1):
+    await RisingEdge(dut.regs_aclk)
+    while not (dut.regs_wvalid == 1 and dut.regs_wready == 1):
         assert dut.R_Scratch_Register_O_upd == 0
         assert dut.R_Register_with_Fields_O_upd == 0
-        await RisingEdge(dut.REGS_ACLK)
+        await RisingEdge(dut.regs_aclk)
 
     assert dut.R_Scratch_Register_O_upd == 0
     assert dut.R_Register_with_Fields_O_upd == 0
-    await RisingEdge(dut.REGS_ACLK)
+    await RisingEdge(dut.regs_aclk)
 
     assert dut.R_Scratch_Register_O_upd == 1
     assert dut.R_Register_with_Fields_O_upd == 0
-    await RisingEdge(dut.REGS_ACLK)
+    await RisingEdge(dut.regs_aclk)
 
     await write_co
 
     # Write second register
     dut._log.info('Writing second register')
     write_co = cocotb.start_soon(with_timeout(axim.write(64, 0), *TIMEOUT))
-    await RisingEdge(dut.REGS_ACLK)
-    while not (dut.REGS_WVALID == 1 and dut.REGS_WREADY == 1):
+    await RisingEdge(dut.regs_aclk)
+    while not (dut.regs_wvalid == 1 and dut.regs_wready == 1):
         assert dut.R_Scratch_Register_O_upd == 0
         assert dut.R_Register_with_Fields_O_upd == 0
-        await RisingEdge(dut.REGS_ACLK)
+        await RisingEdge(dut.regs_aclk)
 
     assert dut.R_Scratch_Register_O_upd == 0
     assert dut.R_Register_with_Fields_O_upd == 0
-    await RisingEdge(dut.REGS_ACLK)
+    await RisingEdge(dut.regs_aclk)
 
     assert dut.R_Scratch_Register_O_upd == 0
     assert dut.R_Register_with_Fields_O_upd == 1
-    await RisingEdge(dut.REGS_ACLK)
+    await RisingEdge(dut.regs_aclk)
 
     await write_co
 

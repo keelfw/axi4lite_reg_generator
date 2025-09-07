@@ -29,44 +29,44 @@ module {{ entity_name }} #(
   parameter ADDRESS_APERTURE = 8,
   parameter REGISTER_INPUTS = 0
 )(
-  input  wire                         regs_aclk,
-  input  wire                         regs_aresetn,
+  input  logic                        regs_aclk,
+  input  logic                        regs_aresetn,
   // Registers
   {% for reg in regs -%}
   {% if reg['reg_type'] == 'ro' or reg['reg_type'] == 'custom' -%}
-  input wire [{{ reg['bits']|count_bits - 1 }}:0] R_{{ reg['name'] }}_I,
+  input logic [{{ reg['bits']|count_bits - 1 }}:0] R_{{ reg['name'] }}_I,
   {% endif -%}
   {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
-  output wire [{{ reg['bits']|count_bits - 1 }}:0] R_{{ reg['name'] }}_O,
+  output logic [{{ reg['bits']|count_bits - 1 }}:0] R_{{ reg['name'] }}_O,
   {% if reg['use_upd_pulse'] -%}
-  output reg R_{{ reg['name'] }}_O_upd,
+  output logic R_{{ reg['name'] }}_O_upd,
   {% endif -%}
   {% endif -%}
   {% endfor %}  
   // Write Address Channel
-  input  wire                        regs_awvalid,
-  output reg                         regs_awready,
-  input  wire [ADDRESS_W-1:0]        regs_awaddr,
-  input  wire [2:0]                  regs_awprot,
+  input  logic                        regs_awvalid,
+  output logic                        regs_awready,
+  input  logic [ADDRESS_W-1:0]        regs_awaddr,
+  input  logic [2:0]                  regs_awprot,
   // Write Data Channel
-  input  wire                        regs_wvalid,
-  output wire                        regs_wready,
-  input  wire [31:0]                 regs_wdata,
-  input  wire [3:0]                  regs_wstrb,
+  input  logic                        regs_wvalid,
+  output logic                        regs_wready,
+  input  logic [31:0]                 regs_wdata,
+  input  logic [3:0]                  regs_wstrb,
   // Write Response Channel
-  output reg                         regs_bvalid,
-  input  wire                        regs_bready,
-  output reg  [1:0]                  regs_bresp,
+  output logic                        regs_bvalid,
+  input  logic                        regs_bready,
+  output logic  [1:0]                 regs_bresp,
   // Read Address Channel
-  input  wire                        regs_arvalid,
-  output reg                         regs_arready,
-  input  wire [ADDRESS_W-1:0]        regs_araddr,
-  input  wire [2:0]                  regs_arprot,
+  input  logic                        regs_arvalid,
+  output logic                        regs_arready,
+  input  logic [ADDRESS_W-1:0]        regs_araddr,
+  input  logic [2:0]                  regs_arprot,
   // Read Data Channel
-  output wire                        regs_rvalid,
-  input  wire                        regs_rready,
-  output reg  [31:0]                 regs_rdata,
-  output reg  [1:0]                  regs_rresp
+  output logic                        regs_rvalid,
+  input  logic                        regs_rready,
+  output logic  [31:0]                regs_rdata,
+  output logic  [1:0]                 regs_rresp
 );
 
 // AXI Response Constants
@@ -82,40 +82,44 @@ localparam [ADDRESS_APERTURE-1:0] REG_{{ reg['name'] }}_ADDR = {{ reg['addr_offs
 
 // Register signal declarations
 {% for reg in regs -%}
-reg [{{ reg['bits']|count_bits-1}}:0] REG_{{ reg['name'] }}_R;
+logic [{{ reg['bits']|count_bits-1}}:0] REG_{{ reg['name'] }}_R;
 {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
-reg [{{ reg['bits']|count_bits-1 }}:0] REG_{{ reg['name'] }}_W;
+logic [{{ reg['bits']|count_bits-1 }}:0] REG_{{ reg['name'] }}_W;
 {% endif %}
 {% endfor %}
 
 // Internal AXI support signals
 // Write state machine states
-localparam [1:0] W_STATE_RST = 2'b00;
-localparam [1:0] W_STATE_WAIT4ADDR = 2'b01;
-localparam [1:0] W_STATE_WAIT4DATA = 2'b10;
-localparam [1:0] W_STATE_WAIT4RESP = 2'b11;
+typedef enum logic [1:0] {
+    W_STATE_RST,
+    W_STATE_WAIT4ADDR,
+    W_STATE_WAIT4DATA,
+    W_STATE_WAIT4RESP
+} write_state_t;
 
 // Read state machine states
-localparam [1:0] R_STATE_RST = 2'b00;
-localparam [1:0] R_STATE_WAIT4ADDR = 2'b01;
-localparam [1:0] R_STATE_WAITREG = 2'b10;
-localparam [1:0] R_STATE_WAIT4DATA = 2'b11;
+typedef enum logic [1:0] {
+    R_STATE_RST,
+    R_STATE_WAIT4ADDR,
+    R_STATE_WAITREG,
+    R_STATE_WAIT4DATA
+} read_state_t;
 
-reg [1:0] state_w;
-reg [1:0] state_r;
+write_state_t state_w;
+read_state_t state_r;
 
-reg [ADDRESS_APERTURE-1:0] address_wr;
-reg [ADDRESS_APERTURE-1:0] address_rd;
+logic [ADDRESS_APERTURE-1:0] address_wr;
+logic [ADDRESS_APERTURE-1:0] address_rd;
 
-reg w_ready;
-reg r_valid;
+logic w_ready;
+logic r_valid;
 
-reg [{{ data_size-1 }}:0] rd_mux;
-reg [1:0] rd_resp;
+logic [{{ data_size-1 }}:0] rd_mux;
+logic [1:0] rd_resp;
 
 // Handle inputs
 
-always @(*) begin
+always_comb begin
 {% for reg in regs -%}
 {% if reg['reg_type'] == 'rw' -%}
   REG_{{ reg['name'] }}_R = REG_{{ reg['name'] }}_W;
@@ -125,7 +129,7 @@ end
 
 generate
   if (REGISTER_INPUTS > 0) begin : reg_inputs_g
-    always @(posedge regs_aclk) begin
+    always_ff @(posedge regs_aclk) begin
       {% for reg in regs -%}
       {% if reg['reg_type'] == 'ro' or reg['reg_type'] == 'custom' -%}
         REG_{{ reg['name'] }}_R <= R_{{ reg['name'] }}_I; 
@@ -133,7 +137,7 @@ generate
       {% endfor %}
     end
   end else begin : con_inputs_g
-    always @(*) begin
+    always_comb begin
       {% for reg in regs -%}
       {% if reg['reg_type'] != 'rw' -%}
         REG_{{ reg['name'] }}_R = R_{{ reg['name'] }}_I;
@@ -154,7 +158,7 @@ assign regs_wready = w_ready;
 assign regs_rvalid = r_valid;
 
 // Write FSM
-always @(posedge regs_aclk) begin
+always_ff @(posedge regs_aclk) begin
   if (!regs_aresetn) begin
     state_w <= W_STATE_RST;
     regs_awready <= '0;
@@ -170,7 +174,7 @@ always @(posedge regs_aclk) begin
       W_STATE_WAIT4ADDR: begin
         if (regs_awvalid) begin
           state_w <= W_STATE_WAIT4DATA;
-          regs_awready <= 0;
+          regs_awready <= '0;
           w_ready <= '1;
           address_wr <= regs_awaddr[ADDRESS_APERTURE-1:0];
         end
@@ -197,7 +201,7 @@ always @(posedge regs_aclk) begin
 end
 
 // Read FSM
-always @(posedge regs_aclk) begin
+always_ff @(posedge regs_aclk) begin
   if (!regs_aresetn) begin
     state_r <= R_STATE_RST;
     regs_arready <= '0;
@@ -235,7 +239,7 @@ always @(posedge regs_aclk) begin
 end
 
 // Write process
-always @(posedge regs_aclk) begin
+always_ff @(posedge regs_aclk) begin
   if (!regs_aresetn) begin
     {%- for reg in regs -%}
     {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
@@ -276,7 +280,7 @@ always @(posedge regs_aclk) begin
   end
 end
 
-always @(*) begin
+always_comb begin
   case (address_rd)
     {% for reg in regs -%}
     REG_{{ reg['name'] }}_ADDR: begin
@@ -296,7 +300,7 @@ always @(*) begin
 end
 
 // Read process
-always @(posedge regs_aclk) begin
+always_ff @(posedge regs_aclk) begin
   if (!regs_aresetn) begin
   end else begin
     if (state_r == R_STATE_WAITREG) begin
