@@ -1,4 +1,4 @@
-# Copyright (C) 2024 KEELFW
+# Copyright (C) 2025 KEELFW
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@ def report_file_exists(file: str) -> bool:
 def main():
     parser = argparse.ArgumentParser(
         prog='axi4lite_reg_generator',
-        description='Generate a VHDL and Verilog register file with an AXI4-Lite interface from JSON',
+        description='Generate VHDL, Verilog, and System Verilog register file with an AXI4-Lite interface from JSON',
     )
 
     parser.add_argument('json_input', type=str, help='Register configuration JSON file')
