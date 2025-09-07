@@ -270,6 +270,15 @@ class RegDef:
         code = self._render_template('axi4lite_template.v')
         return code[0] + '\n// SHA-256: ' + code[1]
 
+    def to_systemverilog(self) -> str:
+        """Generate SystemVerilog code for register file.
+
+        Returns:
+            Generated SystemVerilog code as string
+        """
+        code = self._render_template('axi4lite_template.sv')
+        return code[0] + '\n// SHA-256: ' + code[1]
+
     def to_md(self) -> str:
         """Generate Markdown documentation for register file.
 

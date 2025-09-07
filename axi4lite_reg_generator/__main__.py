@@ -68,6 +68,9 @@ def main():
     with open(fname := (args.output + '.v'), 'w') as f_out:
         print(f'Writing Verilog to: {fname}')
         f_out.write(regs.to_verilog())
+    with open(fname := (args.output + '.sv'), 'w') as f_out:
+        print(f'Writing SystemVerilog to: {fname}')
+        f_out.write(regs.to_systemverilog())
     with open(fname := (args.output + '.md'), 'w') as f_out:
         print(f'Writing Documentation to: {fname}')
         f_out.write(regs.to_md())

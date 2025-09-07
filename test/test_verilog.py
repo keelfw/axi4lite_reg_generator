@@ -20,6 +20,7 @@ import axi4lite_reg_generator
 import subprocess
 import cocotb_test.simulator
 import uuid
+import pytest
 
 test_dir = os.path.dirname(__file__)
 json_file_path = os.path.join(test_dir, 'test_json.json')
@@ -70,49 +71,30 @@ def test_basic_verilog():
     )
 
 
-def test_verilogsim_noreg():
+@pytest.mark.parametrize('hdl_type', ['v', 'sv'])
+@pytest.mark.parametrize('register_inputs', [0, 1])
+def test_verilogsim(hdl_type, register_inputs):
     """Test Verilog RTL simulation of generated register file.
 
     Tests:
         1. Generates Verilog code
-        2. Runs cocotb simulation with inputs NOT registered
+        2. Runs cocotb simulation
         3. Verifies simulation completes successfully
     """
     reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
-    test_file = os.path.join(test_dir, '_test.v')
+    test_file = os.path.join(test_dir, f'_test.{hdl_type}')
     with open(test_file, 'w') as f:
-        f.write(reg.to_verilog())
+        if hdl_type == 'sv':
+            f.write(reg.to_systemverilog())
+        else:
+            f.write(reg.to_verilog())
 
     cocotb_test.simulator.run(
-        verilog_sources=['./test/_test.v'],
-        toplevel_lang='verilog',
+        verilog_sources=[f'./test/_test.{hdl_type}'],
+        toplevel_lang='verilog' if hdl_type == 'v' else 'systemverilog',
         toplevel='reg_file',
         module='test.test_sim',
         simulator='icarus',
-        parameters=dict(REGISTER_INPUTS=0),
-        timescale='1ns/1ns',
-    )
-
-
-def test_verilogsim_reg():
-    """Test Verilog RTL simulation of generated register file.
-
-    Tests:
-        1. Generates Verilog code
-        2. Runs cocotb simulation with inputs registered
-        3. Verifies simulation completes successfully
-    """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
-    test_file = os.path.join(test_dir, '_test.v')
-    with open(test_file, 'w') as f:
-        f.write(reg.to_verilog())
-
-    cocotb_test.simulator.run(
-        verilog_sources=['./test/_test.v'],
-        toplevel_lang='verilog',
-        toplevel='reg_file',
-        module='test.test_sim',
-        simulator='icarus',
-        parameters=dict(REGISTER_INPUTS=1),
+        parameters=dict(REGISTER_INPUTS=register_inputs),
         timescale='1ns/1ns',
     )
