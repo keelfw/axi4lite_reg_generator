@@ -20,6 +20,7 @@
 from __future__ import annotations
 import json
 import os
+import platform
 import jinja2
 import datetime
 import hashlib
@@ -70,7 +71,7 @@ class RegDef:
         except OSError:
             self._reg_cfg['include_username'] = False
             self.id_username = 'unknown'
-        self.id_hostname = os.uname().nodename
+        self.id_hostname = platform.node()
         self.id_timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
             '%Y-%m-%d %H:%M:%S %Z'
         )
