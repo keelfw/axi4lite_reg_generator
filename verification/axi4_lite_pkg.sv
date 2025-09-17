@@ -55,4 +55,149 @@ interface axi4_lite_if #(
         input rready,
         output rvalid, rdata, rresp
     );
+
+    // Reset assertions - ensure ready/valid signals are low during reset
+    property reset_awvalid;
+        @(posedge aclk) !aresetn |-> !awvalid;
+    endproperty
+
+    property reset_awready;
+        @(posedge aclk) !aresetn |-> !awready;
+    endproperty
+
+    property reset_wvalid;
+        @(posedge aclk) !aresetn |-> !wvalid;
+    endproperty
+
+    property reset_wready;
+        @(posedge aclk) !aresetn |-> !wready;
+    endproperty
+
+    property reset_bvalid;
+        @(posedge aclk) !aresetn |-> !bvalid;
+    endproperty
+
+    property reset_bready;
+        @(posedge aclk) !aresetn |-> !bready;
+    endproperty
+
+    property reset_arvalid;
+        @(posedge aclk) !aresetn |-> !arvalid;
+    endproperty
+
+    property reset_arready;
+        @(posedge aclk) !aresetn |-> !arready;
+    endproperty
+
+    property reset_rvalid;
+        @(posedge aclk) !aresetn |-> !rvalid;
+    endproperty
+
+    property reset_rready;
+        @(posedge aclk) !aresetn |-> !rready;
+    endproperty
+
+    assert property (reset_awvalid);
+    assert property (reset_awready);
+    assert property (reset_wvalid);
+    assert property (reset_wready);
+    assert property (reset_bvalid);
+    assert property (reset_bready);
+    assert property (reset_arvalid);
+    assert property (reset_arready);
+    assert property (reset_rvalid);
+    assert property (reset_rready);
+
+    // Data stability assertions - data must not change when valid is high and ready is low
+    property awaddr_stable;
+        @(posedge aclk) disable iff (!aresetn)
+        (awvalid && !awready) |=> $stable(awaddr);
+    endproperty
+
+    property awprot_stable;
+        @(posedge aclk) disable iff (!aresetn)
+        (awvalid && !awready) |=> $stable(awprot);
+    endproperty
+
+    property wdata_stable;
+        @(posedge aclk) disable iff (!aresetn)
+        (wvalid && !wready) |=> $stable(wdata);
+    endproperty
+
+    property wstrb_stable;
+        @(posedge aclk) disable iff (!aresetn)
+        (wvalid && !wready) |=> $stable(wstrb);
+    endproperty
+
+    property araddr_stable;
+        @(posedge aclk) disable iff (!aresetn)
+        (arvalid && !arready) |=> $stable(araddr);
+    endproperty
+
+    property arprot_stable;
+        @(posedge aclk) disable iff (!aresetn)
+        (arvalid && !arready) |=> $stable(arprot);
+    endproperty
+
+    property rdata_stable;
+        @(posedge aclk) disable iff (!aresetn)
+        (rvalid && !rready) |=> $stable(rdata);
+    endproperty
+
+    property rresp_stable;
+        @(posedge aclk) disable iff (!aresetn)
+        (rvalid && !rready) |=> $stable(rresp);
+    endproperty
+
+    property bresp_stable;
+        @(posedge aclk) disable iff (!aresetn)
+        (bvalid && !bready) |=> $stable(bresp);
+    endproperty
+
+    assert property (awaddr_stable);
+    assert property (awprot_stable);
+    assert property (wdata_stable);
+    assert property (wstrb_stable);
+    assert property (araddr_stable);
+    assert property (arprot_stable);
+    assert property (rdata_stable);
+    assert property (rresp_stable);
+    assert property (bresp_stable);
+
+    // AXI4-Lite protocol sequence assertions
+    // Write transaction: Address -> Data -> Response
+    sequence write_addr_phase;
+        awvalid && awready;
+    endsequence
+
+    sequence write_data_phase;
+        wvalid && wready;
+    endsequence
+
+    sequence write_resp_phase;
+        bvalid && bready;
+    endsequence
+
+    property write_sequence;
+        @(posedge aclk) disable iff (!aresetn)
+        (awvalid && awready) |-> ##[0:$] (wvalid && wready) ##[1:$] (bvalid && bready);
+    endproperty
+
+    // Read transaction: Address -> Response (with data)
+    sequence read_addr_phase;
+        arvalid && arready;
+    endsequence
+
+    sequence read_resp_phase;
+        rvalid && rready;
+    endsequence
+
+    property read_sequence;
+        @(posedge aclk) disable iff (!aresetn)
+        (arvalid && arready) |-> ##[1:$] (rvalid && rready);
+    endproperty
+
+    assert property (write_sequence);
+    assert property (read_sequence);
+
 endinterface : axi4_lite_if
