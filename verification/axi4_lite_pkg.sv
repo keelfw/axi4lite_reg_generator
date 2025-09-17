@@ -57,44 +57,45 @@ interface axi4_lite_if #(
     );
 
     // Reset assertions - ensure ready/valid signals are low during reset
+    // For synchronous resets, check on the next cycle after reset is asserted
     property reset_awvalid;
-        @(posedge aclk) !aresetn |-> !awvalid;
+        @(posedge aclk) !aresetn |=> !awvalid;
     endproperty
 
     property reset_awready;
-        @(posedge aclk) !aresetn |-> !awready;
+        @(posedge aclk) !aresetn |=> !awready;
     endproperty
 
     property reset_wvalid;
-        @(posedge aclk) !aresetn |-> !wvalid;
+        @(posedge aclk) !aresetn |=> !wvalid;
     endproperty
 
     property reset_wready;
-        @(posedge aclk) !aresetn |-> !wready;
+        @(posedge aclk) !aresetn |=> !wready;
     endproperty
 
     property reset_bvalid;
-        @(posedge aclk) !aresetn |-> !bvalid;
+        @(posedge aclk) !aresetn |=> !bvalid;
     endproperty
 
     property reset_bready;
-        @(posedge aclk) !aresetn |-> !bready;
+        @(posedge aclk) !aresetn |=> !bready;
     endproperty
 
     property reset_arvalid;
-        @(posedge aclk) !aresetn |-> !arvalid;
+        @(posedge aclk) !aresetn |=> !arvalid;
     endproperty
 
     property reset_arready;
-        @(posedge aclk) !aresetn |-> !arready;
+        @(posedge aclk) !aresetn |=> !arready;
     endproperty
 
     property reset_rvalid;
-        @(posedge aclk) !aresetn |-> !rvalid;
+        @(posedge aclk) !aresetn |=> !rvalid;
     endproperty
 
     property reset_rready;
-        @(posedge aclk) !aresetn |-> !rready;
+        @(posedge aclk) !aresetn |=> !rready;
     endproperty
 
     assert property (reset_awvalid);
