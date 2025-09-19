@@ -13,24 +13,22 @@ stop:
 	mdc workspace destroy -y
 
 compile_sv:
-	LIB_PREFIX=sv_
-	mdc dvlcom -a '-lib $(LIB_PREFIX)work -sv example.sv'
-	$(MAKE) compile_common LIB_PREFIX=$(LIB_PREFIX)
+	mdc dvlcom -a '-lib sv_work -sv example.sv'
+	$(MAKE) compile_common LIB_PREFIX=sv_
 
 compile_v:
-	LIB_PREFIX=v_
-	mdc dvlcom -a '-lib $(LIB_PREFIX)work -vlog2005 example.v'
-	$(MAKE) compile_common LIB_PREFIX=$(LIB_PREFIX)
+	mdc dvlcom -a '-lib v_work -vlog2005 example.v'
+	$(MAKE) compile_common LIB_PREFIX=v_
 
 compile_vhdl:
-	LIB_PREFIX=vhdl_
-	mdc dvhcom -a '-lib $(LIB_PREFIX)work -vhdl2008 example.vhd'
-	$(MAKE) compile_common LIB_PREFIX=$(LIB_PREFIX)
+	mdc dvhcom -a '-lib vhdl_work -vhdl2008 example.vhd'
+	$(MAKE) compile_common LIB_PREFIX=vhdl_
 	
 compile_common:
-	@for file in $(COMMON_SOURCES); do \
-		mdc dvlcom -a '-lib $(LIB_PREFIX)work -sv $$file'; \
-	done
+	@bash -c 'set -e; for file in $(COMMON_SOURCES); do \
+		echo "Processing $$file"; \
+		mdc dvlcom -a "-lib $(LIB_PREFIX)work -sv $$file"; \
+	done'
 
 simulate:
 	mdc dsim -a '-top $(LIB_PREFIX)work.tb'
