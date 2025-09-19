@@ -27,8 +27,7 @@ class test_base #(
         #1000;
     endtask
 
-    //virtual task run_test();
-    task run_test(ref logic aresetn);
+    virtual task run_test(ref logic aresetn);
         axi4_lite_transaction_write #(AWIDTH, DWIDTH) txn_w;
         axi4_lite_transaction_read #(AWIDTH, DWIDTH) txn_r;
 
@@ -125,6 +124,169 @@ class test_base #(
 
 endclass
 
+class test_read_invalid #(
+    parameter AWIDTH = 32,
+    parameter DWIDTH = 32
+) extends test_base #(AWIDTH, DWIDTH);
+    function new(virtual example_if vif);
+        super.new(vif);
+    endfunction
+
+    virtual task run_test(ref logic aresetn);
+        axi4_lite_transaction_read #(AWIDTH, DWIDTH) txn_r;
+
+        reset_sequence(aresetn);
+
+        txn_r = new(
+            .addr(8),
+            .expected_resp(SLVERR),
+            .check_resp(1)
+        );
+        axi4_lite_master.read_txn(txn_r);
+        $display("Completed invalid read: %s", txn_r.convert2string());
+        
+    endtask
+endclass
+
+class test_write_invalid #(
+    parameter AWIDTH = 32,
+    parameter DWIDTH = 32
+) extends test_base #(AWIDTH, DWIDTH);
+    function new(virtual example_if vif);
+        super.new(vif);
+    endfunction
+
+    virtual task run_test(ref logic aresetn);
+        axi4_lite_transaction_write #(AWIDTH, DWIDTH) txn_w;
+
+        reset_sequence(aresetn);
+
+        txn_w = new(
+            .addr(8),
+            .data(0),
+            .expected_resp(SLVERR),
+            .check_resp(1)
+        );
+        axi4_lite_master.write_txn(txn_w);
+        $display("Completed invalid write: %s", txn_w.convert2string());
+        
+    endtask
+endclass
+
+class test_write_enables #(
+    parameter AWIDTH = 32,
+    parameter DWIDTH = 32
+) extends test_base #(AWIDTH, DWIDTH);
+    function new(virtual example_if vif);
+        super.new(vif);
+    endfunction
+
+    function logic calc_value(integer byte_enable);
+        const integer strobe_len = DWIDTH/8;
+        logic [DWIDTH-1:0] val = 0;
+        for (integer i=0; i < strobe_len; i++) begin
+            if (byte_enable & (1 << i)) begin
+                val |= (8'hFF << (i*8));
+            end
+        end
+
+        return val;
+    endfunction
+
+    virtual task run_test(ref logic aresetn);
+        const int address = 4;
+        axi4_lite_transaction_write #(AWIDTH, DWIDTH) txn_w;
+        axi4_lite_transaction_read #(AWIDTH, DWIDTH) txn_r;
+
+        reset_sequence(aresetn);
+
+        for (integer i=0; i < 16; i++) begin
+            txn_w = new(
+                .addr(address),
+                .data(0),
+                .check_resp(1)
+            );
+            axi4_lite_master.write_txn(txn_w);
+            txn_r = new(
+                .addr(address),
+                .expected_data(0),
+                .check_data(1),
+                .check_resp(1)
+            );
+            axi4_lite_master.read_txn(txn_r);
+
+            txn_w = new(
+                .addr(address),
+                .data(32'hFFFFFFFF),
+                .strb(i),
+                .check_resp(1)
+            );
+            axi4_lite_master.write_txn(txn_w);
+            txn_r = new(
+                .addr(address),
+                .expected_data(calc_value(i)),
+                .check_data(1),
+                .check_resp(1)
+            );
+            axi4_lite_master.read_txn(txn_r);
+            $display("Completed strb (%d) write/read: %s", i, txn_r.convert2string());
+        end
+        
+    endtask
+endclass
+
+class test_upd_pulse #(
+    parameter AWIDTH = 32,
+    parameter DWIDTH = 32
+) extends test_base #(AWIDTH, DWIDTH);
+    function new(virtual example_if vif);
+        super.new(vif);
+    endfunction
+
+    task monitor_upd_pulse(ref logic upd);
+        integer found_write = 0;
+        while (found_write < 2) begin
+            @(posedge vif.aclk);
+            if (found_write > 0) begin
+                found_write += 1;
+            end
+
+            if (vif.axi4_lite.wvalid && vif.axi4_lite.wready) begin
+                found_write = 1;
+            end
+
+            assert (upd == 0) else $error("Update pulse fired too early!");
+        end
+
+        @(posedge vif.aclk);
+        assert (upd == 1) else $error("Update pulse did not fire!");
+        @(posedge vif.aclk);
+        assert (upd == 0) else $error("Update pulse stayed high for too long");
+    endtask
+
+    virtual task run_test(ref logic aresetn);
+        axi4_lite_transaction_write #(AWIDTH, DWIDTH) txn_w;
+
+        reset_sequence(aresetn);
+
+        txn_w = new(
+            .addr(4)
+        );
+        fork
+            axi4_lite_master.write_txn(txn_w);
+            monitor_upd_pulse(vif.R_Scratch_Register_O_upd);
+        join
+
+        txn_w = new(
+            .addr(64)
+        );
+        fork
+            axi4_lite_master.write_txn(txn_w);
+            monitor_upd_pulse(vif.R_Register_with_Fields_O_upd);
+        join
+    endtask
+endclass
+
 module tb();
     parameter ADDRESS_W = 32;
     parameter DATA_W = 32;
@@ -177,9 +339,46 @@ module tb();
 
     // Test instantiation and execution
     test_base #(ADDRESS_W, DATA_W) test;
+    string test_name;
 
     initial begin
-        test = new(reg_if);
+        if (!$value$plusargs("TEST=%s", test_name)) begin
+            test_name = "test_base";
+        end
+
+        case (test_name)
+            "test_base": begin
+                test_base #(ADDRESS_W, DATA_W) tb;
+                tb = new(reg_if);
+                test = tb;
+            end
+            "test_read_invalid": begin
+                test_read_invalid #(ADDRESS_W, DATA_W) tb;
+                tb = new(reg_if);
+                test = tb;
+            end
+            "test_write_invalid": begin
+                test_write_invalid #(ADDRESS_W, DATA_W) tb;
+                tb = new(reg_if);
+                test = tb;
+            end
+            "test_write_enables": begin
+                test_write_enables #(ADDRESS_W, DATA_W) tb;
+                tb = new(reg_if);
+                test = tb;
+            end
+            "test_upd_pulse": begin
+                test_write_enables #(ADDRESS_W, DATA_W) tb;
+                tb = new(reg_if);
+                test = tb;
+            end
+            default: begin
+                $error("Unknown test: %s", test_name);
+                $finish;
+            end
+        endcase
+
+        $display("Running test: %s", test_name);
         test.run(aresetn);
         $finish;
     end
