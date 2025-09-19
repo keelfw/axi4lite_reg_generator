@@ -1,18 +1,20 @@
 `include "axi4_lite_bfm.sv"
 
-class test_base;
-    axi4_lite_master_driver axi4_lite_master;
+class test_base #(
+    parameter AWIDTH = 32,
+    parameter DWIDTH = 32
+);
+    axi4_lite_master_driver #(AWIDTH, DWIDTH) axi4_lite_master;
 
-    mailbox #(axi4_lite_transaction) driver_mbx;
+    mailbox #(axi4_lite_transaction #(AWIDTH, DWIDTH)) driver_mbx;
 
-    virtual axi4_lite_if vif;
+    virtual example_if vif;
+    virtual axi4_lite_if axi_if;
 
-    axi4_lite_transaction_write txn_w;
-    axi4_lite_transaction_read txn_r;
-
-    function new(virtual axi4_lite_if vif);
+    function new(virtual example_if vif);
         this.vif = vif;
-        axi4_lite_master = new(vif);
+        this.axi_if = vif.axi4_lite;
+        axi4_lite_master = new(this.axi_if);
     endfunction
 
     task run(ref logic aresetn);
@@ -22,26 +24,29 @@ class test_base;
 
         run_test(aresetn);
 
-        $display("Writing Register");
-        axi4_lite_master.write(
-            4,32,.txn(txn_w)
-        );
-        $display("Writing Register Complete: %s", txn_w.convert2string());
-        axi4_lite_master.read(
-            0,.txn(txn_r)
-        );
-        $display("Reading Register Complete: %s", txn_r.convert2string());
-        axi4_lite_master.read(
-            4,.txn(txn_r)
-        );
-        $display("Reading Register Complete: %s", txn_r.convert2string());
-
         #1000;
     endtask
 
     //virtual task run_test();
     task run_test(ref logic aresetn);
+        axi4_lite_transaction_write #(AWIDTH, DWIDTH) txn_w;
+        axi4_lite_transaction_read #(AWIDTH, DWIDTH) txn_r;
+
+        vif.R_Test_Register_I = 32'hFEEDBACE;
+        vif.R_Register_with_Fields_I = 2**12-1;
+
         reset_sequence(aresetn);
+
+        $display("Checking default values");
+        txn_r = new(
+            .addr(0),
+            .expected_data(vif.R_Test_Register_I),
+            .check_data(1),
+            .check_resp(1)
+        );
+        axi4_lite_master.read_txn(txn_r);
+        $display("Complete :: %s", txn_r.convert2string());
+
     endtask
 
     task reset_sequence(ref logic aresetn);
@@ -109,10 +114,10 @@ module tb();
     );
 
     // Test instantiation and execution
-    test_base test;
+    test_base #(ADDRESS_W, DATA_W) test;
 
     initial begin
-        test = new(reg_if.axi4_lite);
+        test = new(reg_if);
         test.run(aresetn);
         $finish;
     end

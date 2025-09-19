@@ -18,9 +18,6 @@ virtual class axi4_lite_transaction #(
     axi_resp_e resp;
     axi_resp_e expected_resp;
     bit check_resp;
-
-    // Pure virtual method that derived classes must implement
-    pure virtual task execute(axi4_lite_master_driver #(AWIDTH, DWIDTH) driver);
     
     // Virtual method for response completion handling
     virtual task complete_transaction();
@@ -57,11 +54,6 @@ class axi4_lite_transaction_write #(
         this.prot = prot;
     endfunction
 
-    // Implementation of the pure virtual method
-    virtual task execute(axi4_lite_master_driver #(AWIDTH, DWIDTH) driver);
-        driver.execute_write(this);
-    endtask
-
     virtual function string convert2string();
         return $sformatf("%s, Data: 0x%0h, Strb: 0x%0h, Resp: %s",
                         super.convert2string(), data, strb, resp.name());
@@ -93,11 +85,6 @@ class axi4_lite_transaction_read #(
         this.check_resp = check_resp;
     endfunction
 
-    // Implementation of the pure virtual method
-    virtual task execute(axi4_lite_master_driver #(AWIDTH, DWIDTH) driver);
-        driver.execute_read(this);
-    endtask
-
     virtual function string convert2string();
         return $sformatf("%s, Data: 0x%0h, Resp: %s",
                         super.convert2string(), data, resp.name());
@@ -118,20 +105,27 @@ class axi4_lite_master_driver#(
         this.mbx = new();
     endfunction
 
-    // Simplified run task using polymorphism
     task run();
         axi4_lite_transaction #(AWIDTH, DWIDTH) txn;
+        axi4_lite_transaction_write #(AWIDTH, DWIDTH) write_txn;
+        axi4_lite_transaction_read #(AWIDTH, DWIDTH) read_txn;
         forever begin
             mbx.get(txn);
             $display("Got a transaction request");
-            txn.execute(this);
+            if (txn.txn_type == WRITE) begin
+                $cast(write_txn, txn);
+                execute_write(write_txn);
+            end else if (txn.txn_type == READ) begin
+                $cast(read_txn, txn);
+                execute_read(read_txn);
+            end
             $display("Transaction completed!");
             txn.complete_transaction();
         end
     endtask
 
     // Specific execution methods called by the transactions
-    task execute_write(axi4_lite_transaction_write #(AWIDTH, DWIDTH) txn);
+    protected task execute_write(axi4_lite_transaction_write #(AWIDTH, DWIDTH) txn);
         fork
             // Write Address
             begin
@@ -163,7 +157,7 @@ class axi4_lite_master_driver#(
         vif.bready <= 0;
     endtask
 
-    task execute_read(axi4_lite_transaction_read #(AWIDTH, DWIDTH) txn);
+    protected task execute_read(axi4_lite_transaction_read #(AWIDTH, DWIDTH) txn);
         // Read Address
         @(posedge vif.aclk);
         vif.arvalid <= 1;
@@ -182,30 +176,35 @@ class axi4_lite_master_driver#(
         vif.rready <= 0;
     endtask
 
-    // Public API methods remain the same
-    task write(
-        input logic [AWIDTH-1:0] addr,
-        input logic [DWIDTH-1:0] data,
-        input logic [DWIDTH/8-1:0] strb = '1,
-        input logic [2:0] prot = 3'b000,
-        output axi4_lite_transaction_write #(AWIDTH, DWIDTH) txn,
+    // Public API methods - polymorphic version
+    task execute(
+        inout axi4_lite_transaction #(AWIDTH, DWIDTH) txn,
         input logic blocking = 1
     );
-        txn = new(addr, data, strb, OKAY, 1'b0, prot);
         this.mbx.put(txn);
         if (blocking) begin
             txn.complete.get(1);
         end
     endtask
 
-    task read(
-        input logic [AWIDTH-1:0] addr,
-        input logic [2:0] prot = 3'b000,
-        output axi4_lite_transaction_read #(AWIDTH, DWIDTH) txn,
+    // Overloaded methods for specific transaction types
+    task write_txn(
+        inout axi4_lite_transaction_write #(AWIDTH, DWIDTH) txn,
         input logic blocking = 1
     );
-        txn = new(addr, 'x, 1'b0, OKAY, 1'b0, prot);
-        this.mbx.put(txn);
+        axi4_lite_transaction #(AWIDTH, DWIDTH) base_txn = txn;
+        this.mbx.put(base_txn);
+        if (blocking) begin
+            txn.complete.get(1);
+        end
+    endtask
+
+    task read_txn(
+        inout axi4_lite_transaction_read #(AWIDTH, DWIDTH) txn,
+        input logic blocking = 1
+    );
+        axi4_lite_transaction #(AWIDTH, DWIDTH) base_txn = txn;
+        this.mbx.put(base_txn);
         if (blocking) begin
             txn.complete.get(1);
         end
