@@ -78,10 +78,10 @@ class test_base #(
         repeat(5) @(posedge vif.aclk);
 
         assert (vif.R_Scratch_Register_O == 32'h1234567A) else begin
-            $error("Error setting scratch register");
+            $error("Error setting scratch register. Expected: %H Actual: %H", 32'h1234567A, vif.R_Scratch_Register_O);
         end
-        assert (vif.R_Scratch_Register_O == 32'h00003B11) else begin
-            $error("Error setting scratch register");
+        assert (vif.R_Register_with_Fields_O == 32'h00003B11) else begin
+            $error("Error setting scratch register. Expected: %H Actual: %H", 32'h00003B11, vif.R_Register_with_Fields_O);
         end
 
         $display("Reading new values back");
@@ -246,18 +246,12 @@ class test_upd_pulse #(
 
     task monitor_upd_pulse(ref logic upd);
         integer found_write = 0;
-        while (found_write < 2) begin
+        while (!(vif.axi4_lite.wvalid && vif.axi4_lite.wready)) begin
             @(posedge vif.aclk);
-            if (found_write > 0) begin
-                found_write += 1;
-            end
-
-            if (vif.axi4_lite.wvalid && vif.axi4_lite.wready) begin
-                found_write = 1;
-            end
-
             assert (upd == 0) else $error("Update pulse fired too early!");
         end
+
+        //assert (0);
 
         @(posedge vif.aclk);
         assert (upd == 1) else $error("Update pulse did not fire!");
@@ -271,7 +265,8 @@ class test_upd_pulse #(
         reset_sequence(aresetn);
 
         txn_w = new(
-            .addr(4)
+            .addr(4),
+            .data(0)
         );
         fork
             axi4_lite_master.write_txn(txn_w);
@@ -279,7 +274,8 @@ class test_upd_pulse #(
         join
 
         txn_w = new(
-            .addr(64)
+            .addr(64),
+            .data(0)
         );
         fork
             axi4_lite_master.write_txn(txn_w);
@@ -340,13 +336,10 @@ module tb();
 
     // Test instantiation and execution
     test_base #(ADDRESS_W, DATA_W) test;
-    string test_name;
+    string test_names_to_run[$];
+    string all_test_names[] = {"test_base", "test_read_invalid", "test_write_invalid", "test_write_enables", "test_upd_pulse"};
 
-    initial begin
-        if (!$value$plusargs("TEST=%s", test_name)) begin
-            test_name = "test_base";
-        end
-
+    task run_single_test(string test_name);
         case (test_name)
             "test_base": begin
                 test_base #(ADDRESS_W, DATA_W) tb;
@@ -369,7 +362,7 @@ module tb();
                 test = tb;
             end
             "test_upd_pulse": begin
-                test_write_enables #(ADDRESS_W, DATA_W) tb;
+                test_upd_pulse #(ADDRESS_W, DATA_W) tb;
                 tb = new(reg_if);
                 test = tb;
             end
@@ -381,6 +374,60 @@ module tb();
 
         $display("Running test: %s", test_name);
         test.run(aresetn);
+        $display("Completed test: %s", test_name);
+    endtask
+
+    initial begin
+        string test_arg;
+
+        // Check if any TEST arguments are specified
+        if ($value$plusargs("TEST=%s", test_arg)) begin
+            // Split comma-separated test names or handle multiple TEST= args
+            string test_list;
+            if ($value$plusargs("TEST=%s", test_list)) begin
+                // Parse comma-separated list
+                static int start = 0, pos = 0;
+                string current_test;
+
+                // Add the test list plus a comma for easier parsing
+                test_list = {test_list, ","};
+
+                while (pos < test_list.len()) begin
+                    if (test_list[pos] == ",") begin
+                        current_test = test_list.substr(start, pos-1);
+                        // Trim whitespace
+                        while (current_test.len() > 0 && (current_test[0] == " " || current_test[0] == "\t")) begin
+                            current_test = current_test.substr(1, current_test.len()-1);
+                        end
+                        while (current_test.len() > 0 && (current_test[current_test.len()-1] == " " || current_test[current_test.len()-1] == "\t")) begin
+                            current_test = current_test.substr(0, current_test.len()-2);
+                        end
+
+                        if (current_test.len() > 0) begin
+                            test_names_to_run.push_back(current_test);
+                        end
+                        start = pos + 1;
+                    end
+                    pos++;
+                end
+            end
+        end else begin
+            // No tests specified, run all tests
+            $display("No specific tests specified, running all tests");
+            foreach (all_test_names[i]) begin
+                test_names_to_run.push_back(all_test_names[i]);
+            end
+        end
+
+        $display("Will run %0d test(s): %p", test_names_to_run.size(), test_names_to_run);
+
+        // Run all specified tests
+        foreach (test_names_to_run[i]) begin
+            $display("\n=== Test %0d/%0d ===", i+1, test_names_to_run.size());
+            run_single_test(test_names_to_run[i]);
+        end
+
+        $display("\nAll %0d test(s) completed successfully!", test_names_to_run.size());
         $finish;
     end
 
