@@ -1,4 +1,5 @@
 `include "axi4_lite_bfm.sv"
+`include "example_if.sv"
 
 class test_base #(
     parameter AWIDTH = 32,

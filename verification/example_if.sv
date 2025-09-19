@@ -1,3 +1,5 @@
+`include "axi4_lite_if.sv"
+
 interface example_if #(
     parameter ADDRESS_W = 32
 )

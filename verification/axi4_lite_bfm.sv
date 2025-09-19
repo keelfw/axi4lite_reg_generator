@@ -1,4 +1,5 @@
 import axi4_lite_pkg::*;
+`include "axi4_lite_if.sv"
 
 
 typedef class axi4_lite_master_driver;
