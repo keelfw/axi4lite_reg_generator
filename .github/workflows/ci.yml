@@ -51,6 +51,8 @@ jobs:
 
   test_rtl:
     runs-on: ubuntu-latest
+    env:
+      MDC_AUTOMATION_TOKEN: ${{ secrets.MDC_AUTOMATION_TOKEN }}
     strategy:
       matrix:
         sim-language: ['compile_sv', 'compile_v', 'compile_vhdl']
