@@ -53,9 +53,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MDC_AUTOMATION_TOKEN: ${{ secrets.MDC_AUTOMATION_TOKEN }}
-    strategy:
-      matrix:
-        sim-language: ['compile_sv', 'compile_v', 'compile_vhdl']
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
@@ -77,13 +74,16 @@ jobs:
     - name: Install MDC
       run: |
         /bin/bash -c "$(curl -fsSL https://releasedist.blob.core.windows.net/dist-dev-releases/install_scripts/install_linux.sh)"
-    - name: Run Simulation
-      id: simulation
+    - name: Start cloud simulator
       run: |
         cd verification
         make start
-        make ${{ matrix.sim-language }}
-        make simulate
+    - name: Run SV Simulation
+      id: simulation_sv
+      run: |
+        cd verification
+        make compile_sv
+        make simulate LIB_PREFIX=sv_
         make get_results
         if grep -q "\$error" dsim.log; then
           echo "ERROR: Found \$error in dsim.log"
@@ -97,9 +97,51 @@ jobs:
           cat dsim.log
           exit 1
         fi
-    - name: Cleanup Simulation
-      if: always() && steps.simulation.conclusion != 'skipped'
+        mv dsim.log dsim_sv.log
+    - name: Run V Simulation
+      id: simulation_v
       run: |
+        cd verification
+        make compile_v
+        make simulate LIB_PREFIX=v_
+        make get_results
+        if grep -q "\$error" dsim.log; then
+          echo "ERROR: Found \$error in dsim.log"
+          cat dsim.log
+          exit 1
+        fi
+        # Check for successful completion message
+        if ! grep -q "All [0-9]\+ test(s) completed successfully!" dsim.log; then
+          echo "ERROR: Expected success message not found in dsim.log"
+          echo "Looking for pattern: 'All X test(s) completed successfully!'"
+          cat dsim.log
+          exit 1
+        fi
+        mv dsim.log dsim_v.log
+    - name: Run VHDL Simulation
+      id: simulation_vhdl
+      run: |
+        cd verification
+        make compile_vhdl
+        make simulate LIB_PREFIX=vhdl_
+        make get_results
+        if grep -q "\$error" dsim.log; then
+          echo "ERROR: Found \$error in dsim.log"
+          cat dsim.log
+          exit 1
+        fi
+        # Check for successful completion message
+        if ! grep -q "All [0-9]\+ test(s) completed successfully!" dsim.log; then
+          echo "ERROR: Expected success message not found in dsim.log"
+          echo "Looking for pattern: 'All X test(s) completed successfully!'"
+          cat dsim.log
+          exit 1
+        fi
+        mv dsim.log dsim_vhdl.log
+    - name: Cleanup Simulation
+      if: always()
+      run: |
+        cd verification
         make stop || true
     - name: Upload verification artifacts
       if: always()
