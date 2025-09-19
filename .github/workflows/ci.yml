@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
-      - 41-migrate-from-poetry-to-uv-package-management # temporary testing branch
+      - 47-migrate-cocotb-test-bench-to-system-verilog # temporary testing branch
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
@@ -51,10 +51,46 @@ jobs:
 
   test_rtl:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sim-language: ['compile_sv', 'compile_v', 'compile_vhdl']
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
-    - name: Build Docker image
-      run: docker build -t reg_test -f Dockerfile .
-    - name: Run tests
-      run: docker run reg_test uv run pytest
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install --no-cache-dir pipx
+        pipx ensurepath
+        pipx install uv
+        # Handle potential compatibility issues with newer Python versions
+        uv sync --extra dev
+    - name: Run AXI4-Lite register generator
+      run: |
+        uv run python -m axi4lite_reg_generator example/inputs/example.json --output verification
+    - name: Install MDC
+      run: |
+        /bin/bash -c "$(curl -fsSL https://releasedist.blob.core.windows.net/dist-dev-releases/install_scripts/install_linux.sh)"
+    - name: Run Simulation
+      id: simulation
+      run: |
+        cd verification
+        make start
+        make ${{ matrix.sim-language }}
+        make simulate
+        make get_results
+    - name: Cleanup Simulation
+      if: always() && steps.simulation.conclusion != 'skipped'
+      run: |
+        make stop
+    - name: Upload verification artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: verification-results
+        path: verification/
+        retention-days: 30
