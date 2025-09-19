@@ -299,7 +299,7 @@ module tb();
     example #(
         .ADDRESS_W(ADDRESS_W),
         .ADDRESS_APERTURE(8),
-        .REGISTER_INPUTS(0)
+        .REGISTER_INPUTS(1'b0)
     ) dut (
         .regs_aclk(reg_if.aclk),
         .regs_aresetn(reg_if.aresetn),
