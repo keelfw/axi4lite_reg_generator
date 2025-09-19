@@ -74,75 +74,50 @@ jobs:
     - name: Install MDC
       run: |
         /bin/bash -c "$(curl -fsSL https://releasedist.blob.core.windows.net/dist-dev-releases/install_scripts/install_linux.sh)"
-    - name: Start cloud simulator
+    - name: Submit and monitor job
       run: |
         cd verification
-        make start
-    - name: Run SV Simulation
-      id: simulation_sv
-      run: |
-        cd verification
-        make compile_sv
-        make simulate LIB_PREFIX=sv_
-        make get_results
-        if grep -q "\$error" dsim.log; then
-          echo "ERROR: Found \$error in dsim.log"
-          cat dsim.log
+        mdc initialize --local-only
+
+        # Submit the job and capture output
+        echo "Submitting job..."
+        JOB_OUTPUT=$(mdc job submit dsim_cloud_job.yml)
+        echo "$JOB_OUTPUT"
+        
+        # Extract Job Id using grep and sed
+        JOB_ID=$(echo "$JOB_OUTPUT" | grep "Job Id:" | sed 's/Job Id: //')
+        
+        if [ -z "$JOB_ID" ]; then
+          echo "Error: Could not extract Job ID from output"
           exit 1
         fi
-        # Check for successful completion message
-        if ! grep -q "All [0-9]\+ test(s) completed successfully!" dsim.log; then
-          echo "ERROR: Expected success message not found in dsim.log"
-          echo "Looking for pattern: 'All X test(s) completed successfully!'"
-          cat dsim.log
-          exit 1
-        fi
-        mv dsim.log dsim_sv.log
-    - name: Run V Simulation
-      id: simulation_v
-      run: |
-        cd verification
-        make compile_v
-        make simulate LIB_PREFIX=v_
-        make get_results
-        if grep -q "\$error" dsim.log; then
-          echo "ERROR: Found \$error in dsim.log"
-          cat dsim.log
-          exit 1
-        fi
-        # Check for successful completion message
-        if ! grep -q "All [0-9]\+ test(s) completed successfully!" dsim.log; then
-          echo "ERROR: Expected success message not found in dsim.log"
-          echo "Looking for pattern: 'All X test(s) completed successfully!'"
-          cat dsim.log
-          exit 1
-        fi
-        mv dsim.log dsim_v.log
-    - name: Run VHDL Simulation
-      id: simulation_vhdl
-      run: |
-        cd verification
-        make compile_vhdl
-        make simulate LIB_PREFIX=vhdl_
-        make get_results
-        if grep -q "\$error" dsim.log; then
-          echo "ERROR: Found \$error in dsim.log"
-          cat dsim.log
-          exit 1
-        fi
-        # Check for successful completion message
-        if ! grep -q "All [0-9]\+ test(s) completed successfully!" dsim.log; then
-          echo "ERROR: Expected success message not found in dsim.log"
-          echo "Looking for pattern: 'All X test(s) completed successfully!'"
-          cat dsim.log
-          exit 1
-        fi
-        mv dsim.log dsim_vhdl.log
-    - name: Cleanup Simulation
-      if: always()
-      run: |
-        cd verification
-        make stop || true
+        
+        echo "Extracted Job ID: $JOB_ID"
+        
+        # Monitor job status
+        echo "Monitoring job status..."
+        while true; do
+          echo "Checking job status..."
+          STATUS_OUTPUT=$(mdc job status $JOB_ID)
+          echo "$STATUS_OUTPUT"
+          
+          # Check for any Error status in tasks
+          if echo "$STATUS_OUTPUT" | grep -q "Error"; then
+            echo "Error: Job failed - found Error status in one or more tasks"
+            exit 1
+          fi
+          
+          # Check if mdc-shutdown is Completed
+          if echo "$STATUS_OUTPUT" | grep "mdc-shutdown" | grep -q "Completed"; then
+            echo "Job completed successfully!"
+            break
+          fi
+          
+          # Wait 10 seconds before next check
+          echo "Waiting 10 seconds before next status check..."
+          sleep 10
+        done
+        mdc job download $JOB_ID
     - name: Upload verification artifacts
       if: always()
       uses: actions/upload-artifact@v4
