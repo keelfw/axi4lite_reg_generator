@@ -45,7 +45,69 @@ class test_base #(
             .check_resp(1)
         );
         axi4_lite_master.read_txn(txn_r);
+        txn_r = new(
+            .addr(4),
+            .expected_data(0),
+            .check_data(1),
+            .check_resp(1)
+        );
+        axi4_lite_master.read_txn(txn_r);
+        txn_r = new(
+            .addr(64),
+            .expected_data(vif.R_Register_with_Fields_I),
+            .check_data(1),
+            .check_resp(1)
+        );
+        axi4_lite_master.read_txn(txn_r);
         $display("Complete :: %s", txn_r.convert2string());
+
+        $display("Writing new values");
+        txn_w = new(
+            .addr(4),
+            .data(32'h1234567A),
+            .check_resp(1)
+        );
+        axi4_lite_master.write_txn(txn_w);
+        txn_w = new(
+            .addr(64),
+            .data(32'hCCAABB11),
+            .check_resp(1)
+        );
+        axi4_lite_master.write_txn(txn_w);
+
+        repeat(5) @(posedge vif.aclk);
+
+        assert (vif.R_Scratch_Register_O == 32'h1234567A) else begin
+            $error("Error setting scratch register");
+        end
+        assert (vif.R_Scratch_Register_O == 32'h00003B11) else begin
+            $error("Error setting scratch register");
+        end
+
+        $display("Reading new values back");
+        txn_r = new(
+            .addr(0),
+            .expected_data(vif.R_Test_Register_I),
+            .check_data(1),
+            .check_resp(1)
+        );
+        axi4_lite_master.read_txn(txn_r);
+        txn_r = new(
+            .addr(4),
+            .expected_data(32'h1234567A),
+            .check_data(1),
+            .check_resp(1)
+        );
+        axi4_lite_master.read_txn(txn_r);
+        txn_r = new(
+            .addr(64),
+            .expected_data(vif.R_Register_with_Fields_I),
+            .check_data(1),
+            .check_resp(1)
+        );
+        axi4_lite_master.read_txn(txn_r);
+
+        $display("Test complete");
 
     endtask
 
