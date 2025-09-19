@@ -73,7 +73,7 @@ jobs:
         uv sync --extra dev
     - name: Run AXI4-Lite register generator
       run: |
-        uv run python -m axi4lite_reg_generator example/inputs/example.json --output verification
+        uv run python -m axi4lite_reg_generator example/inputs/example.json --output verification/example
     - name: Install MDC
       run: |
         /bin/bash -c "$(curl -fsSL https://releasedist.blob.core.windows.net/dist-dev-releases/install_scripts/install_linux.sh)"
@@ -85,10 +85,22 @@ jobs:
         make ${{ matrix.sim-language }}
         make simulate
         make get_results
+        if grep -q "\$error" dsim.log; then
+          echo "ERROR: Found \$error in dsim.log"
+          cat dsim.log
+          exit 1
+        fi
+        # Check for successful completion message
+        if ! grep -q "All [0-9]\+ test(s) completed successfully!" dsim.log; then
+          echo "ERROR: Expected success message not found in dsim.log"
+          echo "Looking for pattern: 'All X test(s) completed successfully!'"
+          cat dsim.log
+          exit 1
+        fi
     - name: Cleanup Simulation
       if: always() && steps.simulation.conclusion != 'skipped'
       run: |
-        make stop
+        make stop || true
     - name: Upload verification artifacts
       if: always()
       uses: actions/upload-artifact@v4
