@@ -75,6 +75,7 @@ jobs:
       run: |
         /bin/bash -c "$(curl -fsSL https://releasedist.blob.core.windows.net/dist-dev-releases/install_scripts/install_linux.sh)"
     - name: Submit and monitor job
+      id: job-monitor
       run: |
         cd verification
         mdc initialize --local-only
@@ -118,6 +119,25 @@ jobs:
           sleep 10
         done
         mdc job download $JOB_ID
+    - name: Evaluate simulation results
+      run: |
+        cd verification/_downloaded_${{ steps.job-monitor.outputs.job_id }}
+        for tarfile in *.tar.gz; do
+          echo "Processing: $tarfile"
+          tar -xzf "$tarfile"
+          if grep -q "\$error" dsim.log; then
+            echo "ERROR: Found \$error in dsim.log"
+            cat dsim.log
+            exit 1
+          fi
+          # Check for successful completion message
+          if ! grep -q "All [0-9]\+ test(s) completed successfully!" dsim.log; then
+            echo "ERROR: Expected success message not found in dsim.log"
+            echo "Looking for pattern: 'All X test(s) completed successfully!'"
+            cat dsim.log
+            exit 1
+          fi
+        done
     - name: Upload verification artifacts
       if: always()
       uses: actions/upload-artifact@v4
