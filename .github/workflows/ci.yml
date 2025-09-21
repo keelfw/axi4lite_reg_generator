@@ -94,10 +94,23 @@ jobs:
         fi
         
         echo "Extracted Job ID: $JOB_ID"
+        echo "job_id=$JOB_ID" >> $GITHUB_OUTPUT
         
         # Monitor job status
-        echo "Monitoring job status..."
+        echo "Monitoring job status (15 minute timeout)..."
+        START_TIME=$(date +%s)
+        TIMEOUT=900  # 15 minutes in seconds
+
         while true; do
+          CURRENT_TIME=$(date +%s)
+          ELAPSED=$((CURRENT_TIME - START_TIME))
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "Error: Job timed out after 15 minutes"
+            echo "Killing job $JOB_ID..."
+            mdc job kill $JOB_ID || echo "Failed to kill job, but continuing..."
+            exit 1
+          fi
+
           echo "Checking job status..."
           STATUS_OUTPUT=$(mdc job status $JOB_ID)
           echo "$STATUS_OUTPUT"
@@ -114,9 +127,9 @@ jobs:
             break
           fi
           
-          # Wait 10 seconds before next check
-          echo "Waiting 10 seconds before next status check..."
-          sleep 10
+          # Wait 15 seconds before next check
+          echo "Waiting 15 seconds before next status check..."
+          sleep 15
         done
         mdc job download $JOB_ID
     - name: Evaluate simulation results
