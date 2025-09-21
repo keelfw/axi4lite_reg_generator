@@ -1,9 +1,13 @@
 DUT_PATH = ../example/outputs/
 DUT_LANGUAGE = sv
-PYTHON = python
+PYTHON = uv run python
+PROJECT_ROOT = ..
 
 # Ensure DSIM_LICENSE, DSIM_HOME environmental variables are set
 # Ensure dsim is in path
+
+generate_example:
+	$(PYTHON) -m axi4lite_reg_generator $(PROJECT_ROOT)/example/inputs/example.json --output ./example
 
 compile_sv:
 	dvlcom -lib sv_work -sv example.sv
@@ -38,5 +42,6 @@ clean:
 	rm -fr dsim_work
 	rm -f metrics.db
 	rm -f *.mxd
+	rm example.*
 
-.PHONY: start compile_sv compile_v compile_vhdl compile_common simulate simulate_with_wave clean
+.PHONY: generate_example compile_sv compile_v compile_vhdl compile_common simulate simulate_with_wave clean
