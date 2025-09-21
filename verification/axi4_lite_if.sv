@@ -16,6 +16,9 @@
 *
 * See LICENSE file for full license details.
 */
+`ifndef AXI4_LITE_IF_SV
+`define AXI4_LITE_IF_SV
+
 import axi4_lite_pkg::*;
 
 interface axi4_lite_if #(
@@ -211,3 +214,5 @@ interface axi4_lite_if #(
     assert property (read_sequence);
 
 endinterface : axi4_lite_if
+
+`endif // AXI4_LITE_IF_SV
