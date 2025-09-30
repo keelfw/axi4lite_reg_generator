@@ -130,7 +130,8 @@ jobs:
           echo "Waiting 15 seconds before next status check..."
           sleep 15
         done
-        mdc job download $JOB_ID
+        sleep 15
+        mdc job download --accept-prompts $JOB_ID
     - name: Evaluate simulation results
       run: |
         cd verification/_downloaded_${{ steps.job-monitor.outputs.job_id }}
