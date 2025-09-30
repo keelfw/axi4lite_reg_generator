@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
-      - 47-migrate-cocotb-test-bench-to-system-verilog # temporary testing branch
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
