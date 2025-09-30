@@ -10,5 +10,5 @@
         "puorc.awesome-vhdl",
         "mshr-h.veriloghdl"
     ],
-    "postCreateCommand": "apt install -y git && uv sync --extra dev && uv run pre-commit install"
+    "postCreateCommand": "pipx install uv && uv sync --extra dev && uv run pre-commit install"
 }

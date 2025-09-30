@@ -73,7 +73,7 @@ jobs:
         uv run python -m axi4lite_reg_generator example/inputs/example.json --output verification/example
     - name: Install MDC
       run: |
-        /bin/bash -c "$(curl -fsSL https://releasedist.blob.core.windows.net/dist-dev-releases/install_scripts/install_linux.sh)"
+        source verification/install_mdc_cloud.sh
     - name: Submit and monitor job
       id: job-monitor
       run: |
