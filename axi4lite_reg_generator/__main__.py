@@ -74,6 +74,9 @@ def main():
     with open(fname := (args.output + '.md'), 'w') as f_out:
         print(f'Writing Documentation to: {fname}')
         f_out.write(regs.to_md())
+    with open(fname := (args.output + '.h'), 'w') as f_out:
+        print(f'Writing C/C++ Header to: {fname}')
+        f_out.write(regs.to_header())
 
 
 if __name__ == '__main__':

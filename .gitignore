@@ -167,9 +167,5 @@ cython_debug/
 .ruff_cache
 
 # Compiled vhdl and simulations
-_test*.vhd
-_test*.v
-_test*.sv
-_test*.md
 sim_build
 work-*.cf
