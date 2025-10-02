@@ -132,6 +132,32 @@ def test_generate_verilog():
         f.write(reg.to_verilog())
 
 
+def test_generate_sv():
+    """Test SystemVerilog code generation and file output.
+
+    Tests:
+        1. Generates SystemVerilog code from register definition
+        2. Writes SystemVerilog code to file
+    """
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    test_file = os.path.join(test_dir, '_test.sv')
+    with open(test_file, 'w') as f:
+        f.write(reg.to_systemverilog())
+
+
+def test_generate_header():
+    """Test C header file generation and file output.
+
+    Tests:
+        1. Generates C header file from register definition
+        2. Writes header file to file
+    """
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    test_file = os.path.join(test_dir, '_test.h')
+    with open(test_file, 'w') as f:
+        f.write(reg.to_header())
+
+
 def test_duplicate_address_detection():
     """Test detection of duplicate register addresses.
 
