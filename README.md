@@ -1,7 +1,12 @@
 # axi4lite_reg_generator
 Python tool to generate VHDL, Verilog, and System Verilog register file with an AXI4-Lite interface from JSON.
 
-The tool also creates detailed register documentation that can be used in a hardware / software ICD.
+Automatically generates:
+* Synthesizable VHDL
+* Synthesizable Verilog
+* Synthesizable System Verilog
+* Register documentation in the form of Markdown
+* `.h` file which can be used for software driver
 
 # Example
 
@@ -42,7 +47,7 @@ The tool also creates detailed register documentation that can be used in a hard
 ]
 ```
 
-# Config
+# Configuration
 
 * **data_size** specifies the width of the data bus
 * **instance_separator** [default: `_`] specifies how to concatenate names when applying [heirarchy](#heirarchy).
@@ -50,7 +55,8 @@ The tool also creates detailed register documentation that can be used in a hard
 * **include_hostname** [default: true] specifies whether to include the hostname of the machine that ran axi4lite_reg_generator in the output file
 * **include_timestamp** [default: true] specifies whether to include the timestamp when axi4lite_reg_generator was run in the output file
 
-# Register Configuration Schema
+## Register Configuration Schema
+This documentation describes the schema used by the json configuration data. The full formal schema definition is in [axi4lite_reg_generator/schema.py](axi4lite_reg_generator/schema.py).
 
 | field         | required | type               | default | description                                         |
 | -----         | -------- | ----               | ------- | -----------                                         |
@@ -63,18 +69,18 @@ The tool also creates detailed register documentation that can be used in a hard
 
 \* If addr_offset byte address is not specified, next byte address will be used. In the example above, the first register will have address `0x00`, the next address will have `0x04` since this is a 32-bit data bus width. If an additional register was put after "Register_with_Fields" (address 64 or `0x40`) it would have address `0x44`.
 
-## Register Types
+### Register Types
 
-### RO
+#### RO
 Read only register type. Registers cannot be written. This is useful for status registers.
 
-### RW
+#### RW
 Read / Write register type. This register type will always readback exactly what was written. This is useful for configuration registers.
 
-### Custom
+#### Custom
 Custom register type. This register relies on external logic to set the read value which may not reflect the output value. An example of this is an interrupt status register where you "write" the value to clear an interrupt. Writing a `1` does not set that bit. External logic is responsible for using the output (write value) and setting the input (read value).
 
-## Bits Definition
+### Bits Definition
 There are multiple ways to describe the bits in a register.
 
 1. Use an integer to set the number of bits
@@ -110,10 +116,7 @@ Each field has its own unique name, number of bits, and optional default value. 
 | reg8  | 11..4  | 255     |
 | reg4  | 3..0   | 0       |
 
-# Automated Documentation
-When creating the register file, a markdown file with the register configuration is also created. This file will be saved in the same output directory as the VHDL, Verilog, and System Verilog files.
-
-# Heirarchy
+## Heirarchy
 
 Register files can include hierarchical configurations by referencing other JSON files. This allows reuse of common register blocks and creation of structured register maps.
 
@@ -161,6 +164,41 @@ This results in a register map with `Heir_Register_Top` at address 0 and heirarc
 ## Resulting Register Naming Convention
 When using heirarchy, the subordinate heirarchical names are prepended with the parent names. By default, they are separated using the `_` character, but this can be changed in the configuration by setting the `instance_separator` value. Prepending the parent prevents naming conflicts in the generated RTL.
 
+# Automated Documentation
+When creating the register file, a markdown file with the register configuration is also created. This file will be saved in the same output directory as the VHDL, Verilog, and System Verilog files.
+
+# C/C++ Header Generation
+C/C++ header file is generated for the specified configuration. The header defines the addresses and bit-shifting getter/setters for registers with multiple fields.
+
+Here is an example of the addresses created. Note that the base address, `EXAMPLE_BASE_ADDR` in the example below, must be defined outside of the header file.
+```C
+// Register Addresses
+#define REG_TEST_REGISTER_ADDR (EXAMPLE_BASE_ADDR + 0)
+#define REG_SCRATCH_REGISTER_ADDR (EXAMPLE_BASE_ADDR + 4)
+#define REG_REGISTER_WITH_FIELDS_ADDR (EXAMPLE_BASE_ADDR + 64)
+```
+
+In the example, the final register, `Register_with_Fields`, contains 3 bit-packed fields named: `reg4`, `reg8`, and `reg3` in order from least significant to most significant bit placement.
+
+The generated header code provides a mechanism to extract the individual components from a full word or set an individual component. Here is an example of how this would be used.
+
+```C
+// Reading / getting a value
+volatile uint32_t* reg_register_with_fields = (volatile uint32_t*)REG_REGISTER_WITH_FIELDS_ADDR;
+uint32_t register_value = *reg_register_with_fields;
+uint32_t reg3_value = REG_REGISTER_WITH_FIELDS_GET_REG3(register_value);
+// reg3_value will be the 3 bits of register_value corresponding to REG3 definition right shifted
+
+// Writing / setting a value
+*reg_register_with_fields = REG_REGISTER_WITH_FIELDS_SET_REG3(5) | REG_REGISTER_WITH_FIELDS_SET_REG4(9) | REG_REGISTER_WITH_FIELDS_SET_REG8(240);
+
+// Read-modify-write example
+register_value = *reg_register_with_fields
+register_value = register_value & ~(REG_REGISTER_WITH_FIELDS_REG3_MASK | REG_REGISTER_WITH_FIELDS_REG4_MASK);
+register_value = register_value | REG_REGISTER_WITH_FIELDS_SET_REG3(5) | REG_REGISTER_WITH_FIELDS_SET_REG4(9);
+*reg_register_with_fields = register_value;
+```
+
 # Hash Verification
 Each generated file (VHDL, Verilog, System Verilog, and Markdown documentation) contains a SHA-256 hash to prove the file has not been modified. The hash is put as a comment at the end of each file.
 
@@ -169,7 +207,7 @@ VHDL Example:
 -- SHA-256: 1e0101dac8c2527f28c65a8e942557c74d56b87be035ccb03b7be79305ce5527
 ```
 
-Verilog / System Verilog Example:
+Verilog / System Verilog / C Header Example:
 ```verilog
 // SHA-256: fa8a530141168f8baa23e2830298d9fde1acff16267d16caf3f8906f469a6361
 ```
@@ -181,12 +219,12 @@ Markdown Example:
 
 To verify the hash you can use the hash validator tool included with this package. To check the validity of the files, run the following command:
 ```bash
-$ axi4lite_reg_generator.validate my_regs.vhd my_regs.v my_regs.sv my_regs.md
+$ axi4lite_reg_generator.validate my_regs.vhd my_regs.v my_regs.sv my_regs.md my_regs.h
 ```
 
 This tool will print out whether the hashes are valid or not.
 
-# Instructions to Create Register File
+# Usage Instructions to Create Register File
 In a simple example, if you have the json file shown in the example above saved as `my_regs.json`, type the following into the command prompt to create `my_regs.vhd`, `my_regs.v`, `my_regs.sv`, and `my_regs.md`.
 ```bash
 $ axi4lite_reg_generator my_regs.json -o my_regs

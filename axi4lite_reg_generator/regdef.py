@@ -289,6 +289,15 @@ class RegDef:
         code = self._render_template('doc.md')
         return code[0] + '\n<!-- SHA-256: ' + code[1] + ' -->'
 
+    def to_header(self) -> str:
+        """Generate C/C++ Header file for register file.
+
+        Returns:
+            Generated C/C++ Header file as string
+        """
+        code = self._render_template('axi4lite_template.h')
+        return code[0] + '\n// SHA-256: ' + code[1]
+
     def _render_template(
         self, template_file: str, template_dir: str = template_dir
     ) -> tuple[str, str]:
@@ -313,6 +322,7 @@ class RegDef:
         j2env.filters['default_val'] = filters.default_val
         j2env.filters['default_val_v'] = filters.default_val_v
         j2env.filters['addr_bits_from_data'] = filters.addr_bits_from_data
+        j2env.filters['get_mask'] = filters.get_mask
 
         template = j2env.get_template(template_file)
 

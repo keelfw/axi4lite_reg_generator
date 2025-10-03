@@ -1,1 +1,4 @@
 results.*
+_test*.*
+test_cdriver
+test_cdriver.h

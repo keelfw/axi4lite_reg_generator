@@ -73,3 +73,26 @@ def default_val_v(reg):
 
 def addr_bits_from_data(data_bits):
     return int(math.ceil(math.log2(data_bits / 8)))
+
+
+def _create_mask(start, end, reg_size):
+    mask = 0
+    for i in range(start, end + 1):
+        mask |= 1 << i
+    hex_digits = (reg_size + 3) // 4
+    return f'{mask:0{hex_digits}X}'
+
+
+def get_mask(bits, field_name, reg_size):
+    offset = 0
+    num_bits = reg_size
+    if isinstance(bits, int) or isinstance(bits, dict):
+        pass
+    else:
+        for field in reversed(bits):
+            if field['field_name'] == field_name:
+                num_bits = field['num_bits']
+                break
+            offset += field['num_bits']
+
+    return _create_mask(offset, offset + num_bits - 1, reg_size)
