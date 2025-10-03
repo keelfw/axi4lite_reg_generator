@@ -13,7 +13,7 @@ def test_valid_hash():
     Test that the hash of the generated files is valid.
     """
     out_file_base = os.path.join(test_dir, '_test_valid_hash')
-    expected_extensions = ('.vhd', '.v', '.md')
+    expected_extensions = ('.vhd', '.v', '.md', '.h')
 
     sys.argv = ['', json_file_path, '-o', out_file_base]
     main_reg()
@@ -40,7 +40,7 @@ def test_invalid_hash():
     Test that invalid hash is reported.
     """
     out_file_base = os.path.join(test_dir, '_test_invalid_hash')
-    expected_extensions = ('.vhd', '.v', '.md')
+    expected_extensions = ('.vhd', '.v', '.md', '.h')
 
     sys.argv = ['', json_file_path, '-o', out_file_base]
     main_reg()
@@ -64,7 +64,7 @@ def test_missing_hash():
     Test that missing hash is reported.
     """
     out_file_base = os.path.join(test_dir, '_test_missing_hash')
-    expected_extensions = ('.vhd', '.v', '.md')
+    expected_extensions = ('.vhd', '.v', '.md', '.h')
 
     sys.argv = ['', json_file_path, '-o', out_file_base]
     main_reg()
