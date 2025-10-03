@@ -37,7 +37,7 @@ def test_c_header_compilation():
 
     # Generate header file
     reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
-    test_file = os.path.join(test_dir, '_test.h')
+    test_file = os.path.join(test_dir, 'test_cdriver.h')
     with open(test_file, 'w') as f:
         f.write(reg.to_header())
 
@@ -48,7 +48,7 @@ def test_c_header_compilation():
 
     # Build test_driver
     result = subprocess.run(
-        ['make', 'test_driver'], cwd=test_dir, capture_output=True, text=True
+        ['make', 'test_cdriver'], cwd=test_dir, capture_output=True, text=True
     )
 
     if result.returncode != 0:
@@ -59,7 +59,7 @@ def test_c_header_compilation():
 
     # Run test_driver
     result = subprocess.run(
-        [os.path.join(test_dir, 'test_driver')], capture_output=True, text=True
+        [os.path.join(test_dir, 'test_cdriver')], capture_output=True, text=True
     )
 
     # Print output for visibility

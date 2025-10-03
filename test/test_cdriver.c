@@ -3,7 +3,7 @@
 
 #define REG_FILE_BASE_ADDR 0x00000000
 
-#include "_test.h"
+#include "test_cdriver.h"
 
 int main(void)
 {
