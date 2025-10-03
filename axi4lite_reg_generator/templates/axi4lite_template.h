@@ -32,7 +32,6 @@
 {% for reg in regs -%}
 #define REG_{{ reg['name'] | upper }}_ADDR ({{ entity_name | upper }}_BASE_ADDR + {{ reg['addr_offset'] }})
 {% endfor %}
-
 // Shift / Mask values for packed registers
 {% for reg in regs -%}
 {% if reg['bits'] is integer -%}
@@ -41,10 +40,9 @@
 {% for bit_field in reg['bits'] -%}
 #define REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_MASK 0x{{ reg['bits']|get_mask(bit_field['field_name'],data_size) }}
 #define REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_SHIFT {{ reg['bits']|get_offset(bit_field['field_name']) }}
+{% endfor -%}
+{% endif -%}
 {% endfor %}
-{% endif %}
-{% endfor %}
-
 // Getter / Setter Macros
 {% for reg in regs -%}
 {% if reg['bits'] is integer -%}
@@ -53,8 +51,7 @@
 {% for bit_field in reg['bits'] -%}
 #define REG_{{ reg['name'] | upper }}_GET_{{ bit_field['field_name'] | upper }}(val) (((val) & REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_MASK) >> REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_SHIFT)
 #define REG_{{ reg['name'] | upper }}_SET_{{ bit_field['field_name'] | upper }}(val) (((val) << REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_SHIFT) & REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_MASK)
+{% endfor -%}
+{% endif -%}
 {% endfor %}
-{% endif %}
-{% endfor %}
-
 #endif
