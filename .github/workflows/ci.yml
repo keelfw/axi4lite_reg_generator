@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
+      - 52-formalize-testing-on-python-314
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
@@ -13,11 +14,7 @@ jobs:
     runs-on: ubuntu-latest  # This specifies the runner environment
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14-dev']
-        include:
-          # Allow beta/dev versions to fail without failing the entire job
-          - python-version: '3.14-dev'
-            experimental: true
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
       # Continue running other versions even if experimental ones fail
       fail-fast: false
     continue-on-error: ${{ matrix.experimental || false }}
