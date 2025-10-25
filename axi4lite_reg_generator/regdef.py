@@ -55,7 +55,7 @@ class RegDef:
 
         Raises:
             ValueError: If configuration is invalid or contains duplicates
-            SchemaError: If configuration doesn't match required schema
+            ValidationError: If configuration doesn't match required schema
         """
         # Validate the configuration data
         self._next_address = 0
@@ -128,7 +128,7 @@ class RegDef:
         Raises:
             FileNotFoundError: If referenced JSON file not found
             JSONDecodeError: If JSON file is invalid
-            SchemaError: If configuration doesn't match schema
+            ValidationError: If configuration doesn't match schema
         """
         cfg = Schema.validate(cfg)
         reg_cfg, cfg = RegDef._split_config(cfg, False)
@@ -216,7 +216,7 @@ class RegDef:
         Raises:
             FileNotFoundError: If JSON file not found
             JSONDecodeError: If JSON is invalid
-            SchemaError: If configuration doesn't match schema
+            ValidationError: If configuration doesn't match schema
         """
         path_to_cfg = os.path.split(json_file)[0]
         with open(json_file, 'r') as f:

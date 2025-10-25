@@ -19,7 +19,7 @@ import os
 import axi4lite_reg_generator
 import json
 import pytest
-import schema
+from pydantic import ValidationError
 import re
 
 test_dir = os.path.dirname(__file__)
@@ -59,7 +59,7 @@ def test_bad_default_values():
         3. Allows valid numeric value (18) to pass
 
     Raises:
-        schema.SchemaError: When non-numeric or invalid default values are used
+        ValidationError: When non-numeric or invalid default values are used
     """
     default_to_try = [18, 'hello', (1,)]
 
@@ -74,7 +74,7 @@ def test_bad_default_values():
         )
 
         if idx > 0:
-            with pytest.raises(schema.SchemaError):
+            with pytest.raises(ValidationError):
                 axi4lite_reg_generator.RegDef(cfg)
         else:
             axi4lite_reg_generator.RegDef(cfg)
