@@ -84,7 +84,7 @@ architecture rtl of example is
   constant REG_Scratch_Register_ADDR : std_logic_vector(ADDRESS_APERTURE-1 downto 0) := std_logic_vector(to_unsigned(4, ADDRESS_APERTURE));
   constant REG_Register_with_Fields_ADDR : std_logic_vector(ADDRESS_APERTURE-1 downto 0) := std_logic_vector(to_unsigned(64, ADDRESS_APERTURE));
   
-  
+
   -- Register signal declarations
   signal REG_Test_Register_R : std_logic_vector(31 downto 0);
   signal REG_Scratch_Register_R : std_logic_vector(31 downto 0);
@@ -118,8 +118,8 @@ begin
     process(REGS_ACLK) is
     begin
       if rising_edge(REGS_ACLK) then
-        REG_Test_Register_R <= R_Test_Register_I; 
-        REG_Register_with_Fields_R <= R_Register_with_Fields_I; 
+        REG_Test_Register_R <= R_Test_Register_I;
+        REG_Register_with_Fields_R <= R_Register_with_Fields_I;
         
       end if;
     end process;
@@ -275,4 +275,4 @@ begin
   end process;
 
 end architecture rtl;
--- SHA-256: a16f96e8a29acb6a0975feb0040165b135b78b6bd487a62814d5136aca0b2755
+-- SHA-256: 2842ceb4e36c74b96e247b44cf04fde321135b05fd32321f15aa6062f6a29042

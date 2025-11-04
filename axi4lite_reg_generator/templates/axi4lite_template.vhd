@@ -39,13 +39,13 @@ port (
   REGS_ARESETN :  in std_logic;
   -- Registers
   {% for reg in regs -%}
-  {% if reg['reg_type'] == 'ro' or reg['reg_type'] == 'custom' -%}
-  R_{{ reg['name'] }}_I :  in std_logic_vector({{ reg['bits']|count_bits - 1 }} downto 0);
+  {% if reg.reg_type == 'ro' or reg.reg_type == 'custom' -%}
+  R_{{ reg.name }}_I :  in std_logic_vector({{ reg.count_bits() - 1 }} downto 0);
   {% endif -%}
-  {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
-  R_{{ reg['name'] }}_O :  out std_logic_vector({{ reg['bits']|count_bits - 1 }} downto 0);
-  {% if reg['use_upd_pulse'] -%}
-  R_{{ reg['name'] }}_O_upd : out std_logic;
+  {% if reg.reg_type == 'rw' or reg.reg_type == 'custom' -%}
+  R_{{ reg.name }}_O :  out std_logic_vector({{ reg.count_bits() - 1 }} downto 0);
+  {% if reg.use_upd_pulse -%}
+  R_{{ reg.name }}_O_upd : out std_logic;
   {% endif -%}
   {% endif -%}
   {% endfor %}
@@ -85,14 +85,14 @@ architecture rtl of {{ entity_name }} is
 
   -- Register addresses
   {% for reg in regs -%}
-  constant REG_{{ reg['name'] }}_ADDR : std_logic_vector(ADDRESS_APERTURE-1 downto 0) := std_logic_vector(to_unsigned({{ reg['addr_offset'] }}, ADDRESS_APERTURE));
+  constant REG_{{ reg.name }}_ADDR : std_logic_vector(ADDRESS_APERTURE-1 downto 0) := std_logic_vector(to_unsigned({{ reg.addr_offset }}, ADDRESS_APERTURE));
   {% endfor %}
-  
+
   -- Register signal declarations
   {% for reg in regs -%}
-  signal REG_{{ reg['name'] }}_R : std_logic_vector({{ reg['bits']|count_bits-1 }} downto 0);
-  {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
-  signal REG_{{ reg['name'] }}_W : std_logic_vector({{ reg['bits']|count_bits-1 }} downto 0);
+  signal REG_{{ reg.name }}_R : std_logic_vector({{ reg.count_bits()-1 }} downto 0);
+  {% if reg.reg_type == 'rw' or reg.reg_type == 'custom' -%}
+  signal REG_{{ reg.name }}_W : std_logic_vector({{ reg.count_bits()-1 }} downto 0);
   {% endif -%}
   {% endfor %}
   -- internal AXI support signals
@@ -115,8 +115,8 @@ begin
   -- Handle inputs
 
   {% for reg in regs -%}
-  {% if reg['reg_type'] == 'rw' -%}
-    REG_{{ reg['name'] }}_R <= REG_{{ reg['name'] }}_W;
+  {% if reg.reg_type == 'rw' -%}
+    REG_{{ reg.name }}_R <= REG_{{ reg.name }}_W;
   {% endif -%}
   {% endfor %}
 
@@ -125,8 +125,8 @@ begin
     begin
       if rising_edge(REGS_ACLK) then
         {% for reg in regs -%}
-        {% if reg['reg_type'] == 'ro' or reg['reg_type'] == 'custom' -%}
-          REG_{{ reg['name'] }}_R <= R_{{ reg['name'] }}_I; 
+        {% if reg.reg_type == 'ro' or reg.reg_type == 'custom' -%}
+          REG_{{ reg.name }}_R <= R_{{ reg.name }}_I;
         {% endif -%}
         {% endfor %}
       end if;
@@ -135,16 +135,16 @@ begin
 
   con_inputs_g : if not REGISTER_INPUTS generate
     {% for reg in regs -%}
-    {% if reg['reg_type'] != 'rw' -%}
-      REG_{{ reg['name'] }}_R <= R_{{ reg['name'] }}_I;
+    {% if reg.reg_type != 'rw' -%}
+      REG_{{ reg.name }}_R <= R_{{ reg.name }}_I;
     {% endif -%}
     {% endfor %}
   end generate;
 
   -- Connect outputs
   {% for reg in regs -%}
-  {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
-    R_{{ reg['name'] }}_O <= REG_{{ reg['name'] }}_W;
+  {% if reg.reg_type == 'rw' or reg.reg_type == 'custom' -%}
+    R_{{ reg.name }}_O <= REG_{{ reg.name }}_W;
   {% endif -%}
   {% endfor %}
   -- Connect AXI-Lite ready/valid control signals
@@ -229,33 +229,33 @@ begin
     if rising_edge(REGS_ACLK) then
       if REGS_ARESETN = '0' then
         {%- for reg in regs -%}
-        {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
-        REG_{{ reg['name'] }}_W <= {{ reg|default_val }};
-        {%- if reg['use_upd_pulse'] %}
-        R_{{ reg['name'] }}_O_upd <= '0';
+        {%- if reg.reg_type == 'rw' or reg.reg_type == 'custom' %}
+        REG_{{ reg.name }}_W <= {{ reg.default_val() }};
+        {%- if reg.use_upd_pulse %}
+        R_{{ reg.name }}_O_upd <= '0';
         {%- endif %}
         {%- endif %}
         {%- endfor %}
       else
         {%- for reg in regs -%}
-        {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
-        {%- if reg['use_upd_pulse'] %}
-        R_{{ reg['name'] }}_O_upd <= '0';
+        {%- if reg.reg_type == 'rw' or reg.reg_type == 'custom' %}
+        {%- if reg.use_upd_pulse %}
+        R_{{ reg.name }}_O_upd <= '0';
         {%- endif %}
         {%- endif %}
         {%- endfor %}
         if REGS_WVALID = '1' and w_ready = '1' then
           {% for reg in regs -%}
-          {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
-          if address_wr = REG_{{ reg['name'] }}_ADDR then
-            {%- if reg['use_upd_pulse'] %}
-            R_{{ reg['name'] }}_O_upd <= '1';
+          {%- if reg.reg_type == 'rw' or reg.reg_type == 'custom' -%}
+          if address_wr = REG_{{ reg.name }}_ADDR then
+            {%- if reg.use_upd_pulse %}
+            R_{{ reg.name }}_O_upd <= '1';
             {%- endif %}
             REGS_BRESP <= AXI_RESP_OKAY;
             {%- for s in range(strobe_size) %}
-            {%- if 8*s < reg['bits']|count_bits %}
+            {%- if 8*s < reg.count_bits() %}
             if REGS_WSTRB({{s}}) = '1' then
-              REG_{{ reg['name'] }}_W({{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }} downto {{ 8*s }}) <= REGS_WDATA({{ [reg['bits']|count_bits-1, 8*(s+1)-1]|min }} downto {{ 8*s }});
+              REG_{{ reg.name }}_W({{ [reg.count_bits()-1, 8*(s+1)-1]|min }} downto {{ 8*s }}) <= REGS_WDATA({{ [reg.count_bits()-1, 8*(s+1)-1]|min }} downto {{ 8*s }});
             end if;
             {%- endif %}
             {%- endfor %}
@@ -268,12 +268,12 @@ begin
   end process;
 
   rd_mux <= {% for reg in regs -%}
-    {%- if reg['bits']|count_bits != data_size %}
-    "{%- for i in range(data_size - reg['bits']|count_bits) %}0{%- endfor -%}" & {% endif -%}REG_{{ reg['name'] }}_R when address_rd = REG_{{ reg['name'] }}_ADDR else {% endfor -%}
+    {%- if reg.count_bits() != data_size %}
+    "{%- for i in range(data_size - reg.count_bits()) %}0{%- endfor -%}" & {% endif -%}REG_{{ reg.name }}_R when address_rd = REG_{{ reg.name }}_ADDR else {% endfor -%}
     (others=>'0');
 
   rd_resp <= {% for reg in regs -%}
-    AXI_RESP_OKAY when address_rd = REG_{{ reg['name'] }}_ADDR else {% endfor -%}
+    AXI_RESP_OKAY when address_rd = REG_{{ reg.name }}_ADDR else {% endfor -%}
     AXI_RESP_SLVERR;
 
   read_p : process (REGS_ACLK) is

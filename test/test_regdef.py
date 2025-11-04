@@ -33,7 +33,7 @@ def test_basic_definition():
         1. Loads register definition from JSON file
         2. Verifies VHDL can be generated without errors
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
     print(reg.to_vhdl())
 
 
@@ -44,10 +44,10 @@ def test_default_values():
         1. Checks register type is set to 'ro' for first register
         2. Verifies default value is 0 for specific bit field
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
 
-    assert reg._cfg[0]['reg_type'] == 'ro'
-    assert reg._cfg[2]['bits'][2]['default_value'] == 0
+    assert reg.registers[0].reg_type == 'ro'
+    assert reg.registers[2].bits[2].default_value == 0
 
 
 def test_bad_default_values():
@@ -75,9 +75,13 @@ def test_bad_default_values():
 
         if idx > 0:
             with pytest.raises(ValidationError):
-                axi4lite_reg_generator.RegDef(cfg)
+                axi4lite_reg_generator.regfile.RegisterFile.from_json_string(
+                    json.dumps(cfg)
+                )
         else:
-            axi4lite_reg_generator.RegDef(cfg)
+            axi4lite_reg_generator.regfile.RegisterFile.from_json_string(
+                json.dumps(cfg)
+            )
 
 
 def test_numeric_conversion():
@@ -86,10 +90,10 @@ def test_numeric_conversion():
     Tests:
         1. Verifies default value of 0xFF is converted to 255 properly
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
 
-    assert reg._cfg[2]['bits'][1]['default_value'] == 255
-    assert reg._cfg[2]['bits'][0]['default_value'] == 3
+    assert reg.registers[2].bits[1].default_value == 255
+    assert reg.registers[2].bits[0].default_value == 3
 
 
 def test_address_values():
@@ -99,11 +103,11 @@ def test_address_values():
         1. Checks sequential addresses are assigned correctly
         2. Verifies address offset is set to 64
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
 
     for i in range(2):
-        assert reg._cfg[i]['addr_offset'] == 4 * i
-    assert reg._cfg[2]['addr_offset'] == 64
+        assert reg.registers[i].addr_offset == 4 * i
+    assert reg.registers[2].addr_offset == 64
 
 
 def test_generate_vhd():
@@ -113,7 +117,7 @@ def test_generate_vhd():
         1. Generates VHDL code from register definition
         2. Writes VHDL code to file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, '_test.vhd')
     with open(test_file, 'w') as f:
         f.write(reg.to_vhdl())
@@ -126,7 +130,7 @@ def test_generate_verilog():
         1. Generates Verilog code from register definition
         2. Writes Verilog code to file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, '_test.v')
     with open(test_file, 'w') as f:
         f.write(reg.to_verilog())
@@ -139,7 +143,7 @@ def test_generate_sv():
         1. Generates SystemVerilog code from register definition
         2. Writes SystemVerilog code to file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, '_test.sv')
     with open(test_file, 'w') as f:
         f.write(reg.to_systemverilog())
@@ -152,7 +156,7 @@ def test_generate_header():
         1. Generates C header file from register definition
         2. Writes header file to file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, '_test.h')
     with open(test_file, 'w') as f:
         f.write(reg.to_header())
@@ -175,7 +179,7 @@ def test_duplicate_address_detection():
     cfg.append(dict(name='dup_addr', addr_offset=4, bits=32))
 
     with pytest.raises(ValueError) as e_info:
-        axi4lite_reg_generator.RegDef(cfg)
+        axi4lite_reg_generator.regfile.RegisterFile.from_json_string(json.dumps(cfg))
 
     assert e_info.type is ValueError
     assert (
@@ -189,7 +193,7 @@ def test_duplicate_address_detection():
     cfg.append(dict(name='dup_addr', addr_offset=64, bits=32))
 
     with pytest.raises(ValueError) as e_info:
-        axi4lite_reg_generator.RegDef(cfg)
+        axi4lite_reg_generator.regfile.RegisterFile.from_json_string(json.dumps(cfg))
 
     assert e_info.type is ValueError
     assert (
@@ -214,7 +218,7 @@ def test_duplicate_name_detection():
     cfg.append(dict(name='Scratch_Register', addr_offset=8, bits=32))
 
     with pytest.raises(ValueError) as e_info:
-        axi4lite_reg_generator.RegDef(cfg)
+        axi4lite_reg_generator.regfile.RegisterFile.from_json_string(json.dumps(cfg))
 
     assert e_info.type is ValueError
     assert (
@@ -253,7 +257,9 @@ def test_address_too_large():
         cfg.append(too_long_reg)
 
         with pytest.raises(ValueError) as e_info:
-            axi4lite_reg_generator.RegDef(cfg)
+            axi4lite_reg_generator.regfile.RegisterFile.from_json_string(
+                json.dumps(cfg)
+            )
 
         assert e_info.type is ValueError
         assert (
@@ -271,18 +277,20 @@ def test_json_output():
         3. Verifies configurations match
         4. Verifies generated VHDL matches
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
 
     # Disable timestamp output which can cause mismatch in generated vhdl
-    reg._reg_cfg['include_timestamp'] = False
+    reg.config.include_timestamp = False
 
     reg_str = reg.get_reg_json()
 
-    cfg_new = json.loads(reg_str)
-    reg_new = axi4lite_reg_generator.RegDef(cfg_new)
+    reg_new = axi4lite_reg_generator.RegisterFile.from_json_string(
+        reg_str, base_path=test_dir
+    )
+    reg_new.config.include_timestamp = False
 
-    assert reg._cfg == reg_new._cfg
-    assert reg._reg_cfg == reg_new._reg_cfg
+    assert reg.registers == reg_new.registers
+    assert reg.config == reg_new.config
     assert reg.to_vhdl() == reg_new.to_vhdl()
     assert reg.to_verilog() == reg_new.to_verilog()
     assert reg.to_md() == reg_new.to_md()
@@ -295,7 +303,7 @@ def test_md_output():
         1. Generates markdown documentation
         2. Writes documentation to file
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
 
     with open(os.path.join(test_dir, '_test.md'), 'w') as f:
         f.write(reg.to_md())
@@ -315,7 +323,7 @@ def test_basic_heirarchy():
         - Register names with hierarchy
         - Register types (ro/rw/custom)
     """
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(
         os.path.join(test_dir, 'test_heir_top.json')
     )
 
@@ -346,14 +354,14 @@ def test_basic_heirarchy():
     ]
 
     # Check each register's address, name and type
-    for i, cfg in enumerate(reg._cfg):
-        assert cfg['addr_offset'] == expected_addresses[i], (
+    for i, cfg in enumerate(reg.registers):
+        assert cfg.addr_offset == expected_addresses[i], (
             f'Wrong address for {cfg["name"]}'
         )
-        assert cfg['name'] == expected_names[i], (
+        assert cfg.name == expected_names[i], (
             f'Wrong name at address {cfg["addr_offset"]}'
         )
-        assert cfg['reg_type'] == expected_types[i], f'Wrong type for {cfg["name"]}'
+        assert cfg.reg_type == expected_types[i], f'Wrong type for {cfg["name"]}'
 
 
 def test_heirarchy_separator():
@@ -373,7 +381,9 @@ def test_heirarchy_separator():
         cfg = json.load(f)
     cfg[0]['config']['instance_separator'] = '__'
 
-    reg = axi4lite_reg_generator.RegDef(cfg, test_dir)
+    reg = axi4lite_reg_generator.regfile.RegisterFile.from_json_string(
+        json.dumps(cfg), base_path=test_dir
+    )
 
     expected_addresses = [0, 128, 132, 192, 196, 200, 260, 500, 504, 564]
     expected_names = [
@@ -402,14 +412,14 @@ def test_heirarchy_separator():
     ]
 
     # Check each register's address, name and type
-    for i, cfg in enumerate(reg._cfg):
-        assert cfg['addr_offset'] == expected_addresses[i], (
+    for i, cfg in enumerate(reg.registers):
+        assert cfg.addr_offset == expected_addresses[i], (
             f'Wrong address for {cfg["name"]}'
         )
-        assert cfg['name'] == expected_names[i], (
+        assert cfg.name == expected_names[i], (
             f'Wrong name at address {cfg["addr_offset"]}'
         )
-        assert cfg['reg_type'] == expected_types[i], f'Wrong type for {cfg["name"]}'
+        assert cfg.reg_type == expected_types[i], f'Wrong type for {cfg["name"]}'
 
 
 def test_missing_config():
@@ -429,10 +439,12 @@ def test_missing_config():
     new_cfg = [c for c in cfg if not (isinstance(c, dict) and 'config' in c)]
 
     with pytest.raises(ValueError) as e_info:
-        axi4lite_reg_generator.RegDef(new_cfg)
+        axi4lite_reg_generator.regfile.RegisterFile.from_json_string(
+            json.dumps(new_cfg)
+        )
 
     assert e_info.type is ValueError
-    assert str(e_info.value) == r'Could not find configuration'
+    assert str(e_info.value) == r'No config section found in configuration'
 
 
 def test_custom_entity_name():
@@ -444,7 +456,7 @@ def test_custom_entity_name():
         3. Verify entity name in Markdown documentation
     """
     test_override_entity_name = 'test_entity_name'
-    reg = axi4lite_reg_generator.RegDef.from_json_file(
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(
         json_file_path, test_override_entity_name
     )
 

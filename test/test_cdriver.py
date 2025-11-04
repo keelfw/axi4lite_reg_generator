@@ -36,7 +36,7 @@ def test_c_header_compilation():
     import subprocess
 
     # Generate header file
-    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    reg = axi4lite_reg_generator.RegisterFile.from_json_file(json_file_path)
     test_file = os.path.join(test_dir, 'test_cdriver.h')
     with open(test_file, 'w') as f:
         f.write(reg.to_header())

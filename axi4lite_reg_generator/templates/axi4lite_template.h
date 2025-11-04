@@ -30,27 +30,23 @@
 
 // Register Addresses
 {% for reg in regs -%}
-#define REG_{{ reg['name'] | upper }}_ADDR ({{ entity_name | upper }}_BASE_ADDR + {{ reg['addr_offset'] }})
+#define REG_{{ reg.name | upper }}_ADDR ({{ entity_name | upper }}_BASE_ADDR + {{ reg.addr_offset }})
 {% endfor %}
 // Shift / Mask values for packed registers
 {% for reg in regs -%}
-{% if reg['bits'] is integer -%}
-{% elif reg['bits'] is mapping -%}
-{% else -%}
-{% for bit_field in reg['bits'] -%}
-#define REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_MASK 0x{{ reg['bits']|get_mask(bit_field['field_name'],data_size) }}
-#define REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_SHIFT {{ reg['bits']|get_offset(bit_field['field_name']) }}
+{% if reg.is_bit_fields -%}
+{% for bit_field in reg.bit_fields -%}
+#define REG_{{ reg.name | upper }}_{{ bit_field.field_name | upper }}_MASK 0x{{ reg.get_mask(bit_field.field_name, data_size) }}
+#define REG_{{ reg.name | upper }}_{{ bit_field.field_name | upper }}_SHIFT {{ reg.get_offset(bit_field.field_name) }}
 {% endfor -%}
 {% endif -%}
 {% endfor %}
 // Getter / Setter Macros
 {% for reg in regs -%}
-{% if reg['bits'] is integer -%}
-{% elif reg['bits'] is mapping -%}
-{% else -%}
-{% for bit_field in reg['bits'] -%}
-#define REG_{{ reg['name'] | upper }}_GET_{{ bit_field['field_name'] | upper }}(val) (((val) & REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_MASK) >> REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_SHIFT)
-#define REG_{{ reg['name'] | upper }}_SET_{{ bit_field['field_name'] | upper }}(val) (((val) << REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_SHIFT) & REG_{{ reg['name'] | upper }}_{{ bit_field['field_name'] | upper }}_MASK)
+{% if reg.is_bit_fields -%}
+{% for bit_field in reg.bit_fields -%}
+#define REG_{{ reg.name | upper }}_GET_{{ bit_field.field_name | upper }}(val) (((val) & REG_{{ reg.name | upper }}_{{ bit_field.field_name | upper }}_MASK) >> REG_{{ reg.name | upper }}_{{ bit_field.field_name | upper }}_SHIFT)
+#define REG_{{ reg.name | upper }}_SET_{{ bit_field.field_name | upper }}(val) (((val) << REG_{{ reg.name | upper }}_{{ bit_field.field_name | upper }}_SHIFT) & REG_{{ reg.name | upper }}_{{ bit_field.field_name | upper }}_MASK)
 {% endfor -%}
 {% endif -%}
 {% endfor %}

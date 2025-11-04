@@ -19,6 +19,7 @@ import argparse
 import os
 import sys
 import axi4lite_reg_generator
+from axi4lite_reg_generator.regfile import RegisterFile
 
 
 def report_file_exists(file: str) -> bool:
@@ -50,7 +51,7 @@ def main():
         exit(-1)
 
     output_entity_name = os.path.split(args.output)[1]
-    regs = axi4lite_reg_generator.regdef.RegDef.from_json_file(
+    regfile = RegisterFile.from_json_file(
         args.json_input, entity_name=output_entity_name
     )
 
@@ -64,19 +65,19 @@ def main():
 
     with open(fname := (args.output + '.vhd'), 'w') as f_out:
         print(f'Writing VHDL to: {fname}')
-        f_out.write(regs.to_vhdl())
+        f_out.write(regfile.to_vhdl())
     with open(fname := (args.output + '.v'), 'w') as f_out:
         print(f'Writing Verilog to: {fname}')
-        f_out.write(regs.to_verilog())
+        f_out.write(regfile.to_verilog())
     with open(fname := (args.output + '.sv'), 'w') as f_out:
         print(f'Writing SystemVerilog to: {fname}')
-        f_out.write(regs.to_systemverilog())
+        f_out.write(regfile.to_systemverilog())
     with open(fname := (args.output + '.md'), 'w') as f_out:
         print(f'Writing Documentation to: {fname}')
-        f_out.write(regs.to_md())
+        f_out.write(regfile.to_md())
     with open(fname := (args.output + '.h'), 'w') as f_out:
         print(f'Writing C/C++ Header to: {fname}')
-        f_out.write(regs.to_header())
+        f_out.write(regfile.to_header())
 
 
 if __name__ == '__main__':

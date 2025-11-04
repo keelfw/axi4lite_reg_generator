@@ -16,7 +16,7 @@
 #
 # See LICENSE file for full license details.
 import importlib.metadata
-from .regdef import RegDef as RegDef
+from .regfile import RegisterFile as RegisterFile
 
 
 def get_version():
