@@ -308,3 +308,13 @@ class HierarchicalConfigEntry(BaseModel):
 HierarchicalEntry = Union[
     HierarchicalConfigEntry, HierarchicalRegisterDef, HierarchicalFileRef
 ]
+
+
+if __name__ == '__main__':
+    """Export JSON schema for the register configuration format."""
+    import json
+    from pydantic import TypeAdapter
+
+    adapter = TypeAdapter(list[HierarchicalEntry])
+    schema = adapter.json_schema()
+    print(json.dumps(schema, indent=2))

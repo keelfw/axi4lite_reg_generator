@@ -16,3 +16,13 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: export-schema
+        name: Export JSON Schema
+        entry: >
+          bash -c "
+          uv run python -m axi4lite_reg_generator.models 2>/dev/null > schema.json &&
+          git add schema.json
+          "
+        language: system
+        pass_filenames: false
+        always_run: true

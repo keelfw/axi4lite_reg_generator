@@ -1,0 +1,256 @@
+{
+  "$defs": {
+    "BitFieldDefinition": {
+      "additionalProperties": false,
+      "description": "Individual bit field definition within a register.",
+      "properties": {
+        "field_name": {
+          "title": "Field Name",
+          "type": "string"
+        },
+        "num_bits": {
+          "minimum": 1,
+          "title": "Num Bits",
+          "type": "integer"
+        },
+        "default_value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "title": "Default Value"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field_name",
+        "num_bits"
+      ],
+      "title": "BitFieldDefinition",
+      "type": "object"
+    },
+    "BitsWithDefault": {
+      "additionalProperties": false,
+      "description": "Bits specified as a dict with num_bits and optional default_value.",
+      "properties": {
+        "num_bits": {
+          "minimum": 1,
+          "title": "Num Bits",
+          "type": "integer"
+        },
+        "default_value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "title": "Default Value"
+        }
+      },
+      "required": [
+        "num_bits"
+      ],
+      "title": "BitsWithDefault",
+      "type": "object"
+    },
+    "Config": {
+      "additionalProperties": false,
+      "description": "Configuration section model.",
+      "properties": {
+        "data_size": {
+          "minimum": 1,
+          "title": "Data Size",
+          "type": "integer"
+        },
+        "entity_name": {
+          "default": "reg_file",
+          "title": "Entity Name",
+          "type": "string"
+        },
+        "instance_separator": {
+          "default": "_",
+          "title": "Instance Separator",
+          "type": "string"
+        },
+        "include_username": {
+          "default": true,
+          "title": "Include Username",
+          "type": "boolean"
+        },
+        "include_hostname": {
+          "default": true,
+          "title": "Include Hostname",
+          "type": "boolean"
+        },
+        "include_timestamp": {
+          "default": true,
+          "title": "Include Timestamp",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data_size"
+      ],
+      "title": "Config",
+      "type": "object"
+    },
+    "HierarchicalConfigEntry": {
+      "additionalProperties": false,
+      "description": "Wrapper for config section in the hierarchical list.",
+      "properties": {
+        "config": {
+          "$ref": "#/$defs/Config"
+        }
+      },
+      "required": [
+        "config"
+      ],
+      "title": "HierarchicalConfigEntry",
+      "type": "object"
+    },
+    "HierarchicalFileRef": {
+      "additionalProperties": false,
+      "description": "File reference model for hierarchical definitions.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "addr_offset": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Addr Offset"
+        }
+      },
+      "required": [
+        "name",
+        "file"
+      ],
+      "title": "HierarchicalFileRef",
+      "type": "object"
+    },
+    "HierarchicalRegisterDef": {
+      "additionalProperties": false,
+      "description": "Register definition before flattening (addr_offset optional).",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "reg_type": {
+          "default": "ro",
+          "enum": [
+            "rw",
+            "ro",
+            "custom"
+          ],
+          "title": "Reg Type",
+          "type": "string"
+        },
+        "use_upd_pulse": {
+          "default": false,
+          "title": "Use Upd Pulse",
+          "type": "boolean"
+        },
+        "addr_offset": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Addr Offset"
+        },
+        "bits": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "$ref": "#/$defs/BitsWithDefault"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/BitFieldDefinition"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Bits"
+        }
+      },
+      "required": [
+        "name",
+        "bits"
+      ],
+      "title": "HierarchicalRegisterDef",
+      "type": "object"
+    }
+  },
+  "items": {
+    "anyOf": [
+      {
+        "$ref": "#/$defs/HierarchicalConfigEntry"
+      },
+      {
+        "$ref": "#/$defs/HierarchicalRegisterDef"
+      },
+      {
+        "$ref": "#/$defs/HierarchicalFileRef"
+      }
+    ]
+  },
+  "type": "array"
+}

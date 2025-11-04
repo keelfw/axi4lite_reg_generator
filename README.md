@@ -50,13 +50,14 @@ Automatically generates:
 # Configuration
 
 * **data_size** specifies the width of the data bus
+* **entity_name** [default: `reg_file`] specifies the name of the generated entity/module
 * **instance_separator** [default: `_`] specifies how to concatenate names when applying [heirarchy](#heirarchy).
 * **include_username** [default: true] specifies whether to include the username of the person who ran axi4lite_reg_generator in the output file
 * **include_hostname** [default: true] specifies whether to include the hostname of the machine that ran axi4lite_reg_generator in the output file
 * **include_timestamp** [default: true] specifies whether to include the timestamp when axi4lite_reg_generator was run in the output file
 
 ## Register Configuration Schema
-This documentation describes the schema used by the json configuration data. The full formal schema definition is in [axi4lite_reg_generator/schema.py](axi4lite_reg_generator/schema.py).
+This documentation describes the schema used by the json configuration data. The full formal schema definition is in [schema.json](schema.json).
 
 | field         | required | type               | default | description                                         |
 | -----         | -------- | ----               | ------- | -----------                                         |
