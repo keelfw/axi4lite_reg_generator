@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest  # This specifies the runner environment
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       # Continue running other versions even if experimental ones fail
       fail-fast: false
     continue-on-error: ${{ matrix.experimental || false }}
@@ -46,7 +46,7 @@ jobs:
         retention-days: 7
 
   test_rtl:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-25.04
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
