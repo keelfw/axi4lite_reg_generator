@@ -46,7 +46,7 @@ jobs:
         retention-days: 7
 
   test_rtl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
     - name: Install system dependencies (simulators)
       run: |
         sudo apt-get update
-        sudo apt-get install -y verilator ghdl-llvm
+        sudo apt-get install -y verilator ghdl-gcc
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip

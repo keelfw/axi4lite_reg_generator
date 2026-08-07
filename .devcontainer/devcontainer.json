@@ -13,5 +13,5 @@
     "containerEnv": {
         "COCOTB_IGNORE_PYTHON_REQUIRES": "1"
     },
-    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y verilator ghdl-llvm && pipx install uv && uv sync --extra dev --extra rtl && uv run pre-commit install"
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y verilator ghdl-gcc && pipx install uv && uv sync --extra dev --extra rtl && uv run pre-commit install"
 }
