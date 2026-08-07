@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 KEELFW
+/* Copyright (C) 2026 KEELFW
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Lesser General Public
@@ -157,36 +157,36 @@ assign regs_rvalid = r_valid;
 always @(posedge regs_aclk) begin
   if (!regs_aresetn) begin
     state_w <= W_STATE_RST;
-    regs_awready <= '0;
-    w_ready <= '0;
-    regs_bvalid <= '0;
+    regs_awready <= 0;
+    w_ready <= 0;
+    regs_bvalid <= 0;
   end
   else begin
     case (state_w)
       W_STATE_RST: begin
         state_w <= W_STATE_WAIT4ADDR;
-        regs_awready <= '1;
+        regs_awready <= 1;
       end
       W_STATE_WAIT4ADDR: begin
         if (regs_awvalid) begin
           state_w <= W_STATE_WAIT4DATA;
           regs_awready <= 0;
-          w_ready <= '1;
+          w_ready <= 1;
           address_wr <= regs_awaddr[ADDRESS_APERTURE-1:0];
         end
       end
       W_STATE_WAIT4DATA: begin
         if (regs_wvalid) begin
           state_w <= W_STATE_WAIT4RESP;
-          w_ready <= '0;
-          regs_bvalid <= '1;
+          w_ready <= 0;
+          regs_bvalid <= 1;
         end
       end
       W_STATE_WAIT4RESP: begin
         if (regs_bready) begin
           state_w <= W_STATE_WAIT4ADDR;
-          regs_bvalid <= '0;
-          regs_awready <= '1;
+          regs_bvalid <= 0;
+          regs_awready <= 1;
         end
       end
       default: begin
@@ -200,31 +200,31 @@ end
 always @(posedge regs_aclk) begin
   if (!regs_aresetn) begin
     state_r <= R_STATE_RST;
-    regs_arready <= '0;
-    r_valid <= '0;
+    regs_arready <= 0;
+    r_valid <= 0;
   end
   else begin
     case (state_r)
       R_STATE_RST: begin
         state_r <= R_STATE_WAIT4ADDR;
-        regs_arready <= '1;
+        regs_arready <= 1;
       end
       R_STATE_WAIT4ADDR: begin
         if (regs_arvalid) begin
           state_r <= R_STATE_WAITREG;
-          regs_arready <= '0;
+          regs_arready <= 0;
           address_rd <= regs_araddr[ADDRESS_APERTURE-1:0];
         end
       end
       R_STATE_WAITREG: begin
         state_r <= R_STATE_WAIT4DATA;
-        r_valid <= '1;
+        r_valid <= 1;
       end
       R_STATE_WAIT4DATA: begin
         if (regs_rready) begin
           state_r <= R_STATE_WAIT4ADDR;
-          r_valid <= '0;
-          regs_arready <= '1;
+          r_valid <= 0;
+          regs_arready <= 1;
         end
       end
       default: begin
@@ -241,7 +241,7 @@ always @(posedge regs_aclk) begin
     {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
     REG_{{ reg['name'] }}_W <= {{ reg|default_val_v }};
     {%- if reg['use_upd_pulse'] %}
-    R_{{ reg['name'] }}_O_upd <= '0;
+    R_{{ reg['name'] }}_O_upd <= 0;
     {%- endif %}
     {%- endif %}
     {%- endfor %}
@@ -250,7 +250,7 @@ always @(posedge regs_aclk) begin
     {%- for reg in regs -%}
     {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
     {%- if reg['use_upd_pulse'] %}
-    R_{{ reg['name'] }}_O_upd <= '0;
+    R_{{ reg['name'] }}_O_upd <= 0;
     {%- endif %}
     {%- endif %}
     {%- endfor %}
@@ -259,7 +259,7 @@ always @(posedge regs_aclk) begin
       {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
       if (address_wr == REG_{{ reg['name'] }}_ADDR) begin
         {%- if reg['use_upd_pulse'] %}
-        R_{{ reg['name'] }}_O_upd <= '1;
+        R_{{ reg['name'] }}_O_upd <= 1;
         {%- endif %}
         regs_bresp <= AXI_RESP_OKAY;
         {%- for s in range(strobe_size) %}
@@ -289,7 +289,7 @@ always @(*) begin
     end
     {% endfor %}
     default: begin
-      rd_mux = '0;
+      rd_mux = 0;
       rd_resp = AXI_RESP_SLVERR;
     end
   endcase
@@ -307,4 +307,3 @@ always @(posedge regs_aclk) begin
 end
 
 endmodule
-
