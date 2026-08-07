@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
-      - 52-formalize-testing-on-python-314
+      - 56-migrate-away-from-dsim-cloud
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
@@ -47,8 +47,6 @@ jobs:
 
   test_rtl:
     runs-on: ubuntu-latest
-    env:
-      MDC_AUTOMATION_TOKEN: ${{ secrets.MDC_AUTOMATION_TOKEN }}
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
@@ -56,102 +54,25 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    - name: Install dependencies
+    - name: Install system dependencies (simulators)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y verilator ghdl-llvm
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install --no-cache-dir pipx
         pipx ensurepath
         pipx install uv
-        # Handle potential compatibility issues with newer Python versions
-        uv sync --extra dev
-    - name: Run AXI4-Lite register generator
-      run: |
-        uv run python -m axi4lite_reg_generator example/inputs/example.json --output verification/example
-    - name: Install MDC
-      run: |
-        source verification/install_mdc_cloud.sh
-    - name: Submit and monitor job
-      id: job-monitor
-      run: |
-        cd verification
-        mdc initialize --local-only
-
-        # Submit the job and capture output
-        echo "Submitting job..."
-        JOB_OUTPUT=$(mdc job submit dsim_cloud_job.yml)
-        echo "$JOB_OUTPUT"
-        
-        # Extract Job Id using grep and sed
-        JOB_ID=$(echo "$JOB_OUTPUT" | grep "Job Id:" | sed 's/Job Id: //')
-        
-        if [ -z "$JOB_ID" ]; then
-          echo "Error: Could not extract Job ID from output"
-          exit 1
-        fi
-        
-        echo "Extracted Job ID: $JOB_ID"
-        echo "job_id=$JOB_ID" >> $GITHUB_OUTPUT
-        
-        # Monitor job status
-        echo "Monitoring job status (15 minute timeout)..."
-        START_TIME=$(date +%s)
-        TIMEOUT=900  # 15 minutes in seconds
-
-        while true; do
-          CURRENT_TIME=$(date +%s)
-          ELAPSED=$((CURRENT_TIME - START_TIME))
-          if [ $ELAPSED -ge $TIMEOUT ]; then
-            echo "Error: Job timed out after 15 minutes"
-            echo "Killing job $JOB_ID..."
-            mdc job kill $JOB_ID || echo "Failed to kill job, but continuing..."
-            exit 1
-          fi
-
-          echo "Checking job status..."
-          STATUS_OUTPUT=$(mdc job status $JOB_ID)
-          echo "$STATUS_OUTPUT"
-          
-          # Check for any Error status in tasks
-          if echo "$STATUS_OUTPUT" | grep -q "Error"; then
-            echo "Error: Job failed - found Error status in one or more tasks"
-            exit 1
-          fi
-          
-          # Check if mdc-shutdown is Completed
-          if echo "$STATUS_OUTPUT" | grep "mdc-shutdown" | grep -q "Completed"; then
-            echo "Job completed successfully!"
-            break
-          fi
-          
-          # Wait 15 seconds before next check
-          echo "Waiting 15 seconds before next status check..."
-          sleep 15
-        done
-        sleep 15
-        mdc job download --accept-prompts $JOB_ID
-    - name: Evaluate simulation results
-      run: |
-        cd verification/_downloaded_${{ steps.job-monitor.outputs.job_id }}
-        for tarfile in *.tar.gz; do
-          echo "Processing: $tarfile"
-          tar -xzf "$tarfile"
-          if grep -q "\$error" dsim.log; then
-            echo "ERROR: Found \$error in dsim.log"
-            cat dsim.log
-            exit 1
-          fi
-          # Check for successful completion message
-          if ! grep -q "All [0-9]\+ test(s) completed successfully!" dsim.log; then
-            echo "ERROR: Expected success message not found in dsim.log"
-            echo "Looking for pattern: 'All X test(s) completed successfully!'"
-            cat dsim.log
-            exit 1
-          fi
-        done
-    - name: Upload verification artifacts
+        uv sync --extra dev --extra rtl
+    - name: Run cocotb RTL tests (Verilator + GHDL)
+      run: COCOTB_IGNORE_PYTHON_REQUIRES=1 uv run pytest verification/test_rtl.py -v
+    - name: Upload verification logs
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: verification-results
-        path: verification/
-        retention-days: 30
+        name: verification-logs
+        path: |
+          sim_build/**/*.log
+          verification/sim_build/**/*.log
+        retention-days: 7

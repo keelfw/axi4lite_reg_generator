@@ -1,5 +1,4 @@
-dsim_work
-*.env
-*.db
-*.mxd
 example.*
+sim_build/
+__pycache__/
+*.vcd
