@@ -1,6 +1,6 @@
 [project]
 name = "axi4lite_reg_generator"
-version = "1.5.1"
+version = "1.5.2"
 description = "Template based VHDL, Verilog, and System Verilog register generator"
 authors = [
     { name = "Kyle O'Brien", email = "kyle@keelfw.com" }
