@@ -1,2 +1,0 @@
-# Instructions from https://help.metrics.ca/support/solutions/articles/154000141138
-/bin/bash -c "$(curl -fsSL https://releasedist.blob.core.windows.net/dist-dev-releases/install_scripts/install_linux.sh)"

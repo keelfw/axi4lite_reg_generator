@@ -1,47 +1,25 @@
-DUT_PATH = ../example/outputs/
-DUT_LANGUAGE = sv
 PYTHON = uv run python
 PROJECT_ROOT = ..
 
-# Ensure DSIM_LICENSE, DSIM_HOME environmental variables are set
-# Ensure dsim is in path
+COCOTB_ENV = COCOTB_IGNORE_PYTHON_REQUIRES=1
 
 generate_example:
 	$(PYTHON) -m axi4lite_reg_generator $(PROJECT_ROOT)/example/inputs/example.json --output ./example
 
-compile_sv:
-	dvlcom -lib sv_work -sv example.sv
-	$(MAKE) compile_common LIB_PREFIX=sv_
+test_sv:
+	COCOTB_IGNORE_PYTHON_REQUIRES=1 uv run pytest test_rtl.py -k "sv" -v
 
-compile_v:
-	dvlcom -lib v_work -vlog2005 example.v
-	$(MAKE) compile_common LIB_PREFIX=v_
+test_v:
+	COCOTB_IGNORE_PYTHON_REQUIRES=1 uv run pytest test_rtl.py -k "v and not sv and not ghdl" -v
 
-compile_vhdl:
-	dvhcom -lib vhdl_work -vhdl2008 example.vhd
-	$(MAKE) compile_common LIB_PREFIX=vhdl_
-	
-compile_common:
-	dvlcom -lib $(LIB_PREFIX)work -sv example_if.sv
-	dvlcom -lib $(LIB_PREFIX)work -sv axi4_lite_pkg.sv
-	dvlcom -lib $(LIB_PREFIX)work -sv axi4_lite_bfm.sv
-	dvlcom -lib $(LIB_PREFIX)work -sv reg_tests.sv
+test_vhdl:
+	COCOTB_IGNORE_PYTHON_REQUIRES=1 uv run pytest test_rtl.py -k "ghdl" -v
 
-simulate:
-	dsim -top $(LIB_PREFIX)work.tb -lib $(LIB_PREFIX)work
-	$(PYTHON) check_errors.py dsim.log
-
-simulate_with_wave:
-	dsim -top $(LIB_PREFIX)work.tb -lib $(LIB_PREFIX)work +acc+b -waves sim.mxd
-	$(PYTHON) check_errors.py dsim.log
+test_all:
+	COCOTB_IGNORE_PYTHON_REQUIRES=1 uv run pytest test_rtl.py -v
 
 clean:
-	rm -f dsim.*
-	rm -f dvhcom.*
-	rm -f dvlcom.*
-	rm -fr dsim_work
-	rm -f metrics.db
-	rm -f *.mxd
-	rm example.*
+	rm -rf sim_build
+	rm -f example.*
 
-.PHONY: generate_example compile_sv compile_v compile_vhdl compile_common simulate simulate_with_wave clean
+.PHONY: generate_example test_sv test_v test_vhdl test_all clean
