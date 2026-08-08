@@ -23,9 +23,9 @@ jobs:
     continue-on-error: ${{ matrix.experimental || false }}
     steps:
     - name: Check out repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Set up Python
-      uses: actions/setup-python@v5  # Updated to v5 for better Python 3.14 support
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true  # This allows beta and dev versions
@@ -42,7 +42,7 @@ jobs:
       continue-on-error: ${{ matrix.experimental || false }}
     - name: Upload test results for experimental versions
       if: matrix.experimental && always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: test-results-python-${{ matrix.python-version }}
         path: test-results/
@@ -52,9 +52,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.13'
     - name: Install system dependencies (simulators)
@@ -81,7 +81,7 @@ jobs:
       run: COCOTB_IGNORE_PYTHON_REQUIRES=1 uv run pytest verification/test_rtl.py -v
     - name: Upload verification logs
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: verification-logs
         path: |
