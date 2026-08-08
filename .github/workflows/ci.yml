@@ -85,6 +85,6 @@ jobs:
       with:
         name: verification-logs
         path: |
-          sim_build/**/*.log
-          verification/sim_build/**/*.log
+          verification/sim_build/*/sim.log
+          verification/sim_build/*/test_*.result.xml
         retention-days: 7

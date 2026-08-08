@@ -57,6 +57,8 @@ def test_verilator(language, register_inputs, example_outputs):
         test_module='tb_reg',
         hdl_toplevel='example',
         build_dir=build_dir,
+        log_file=os.path.join(build_dir, 'sim.log'),
+        verbose=True,
     )
 
 
@@ -79,4 +81,6 @@ def test_ghdl(register_inputs, example_outputs):
         test_module='tb_reg',
         hdl_toplevel='example',
         build_dir=build_dir,
+        log_file=os.path.join(build_dir, 'sim.log'),
+        verbose=True,
     )
