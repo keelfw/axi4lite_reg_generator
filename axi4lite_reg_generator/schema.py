@@ -15,9 +15,43 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 # See LICENSE file for full license details.
+import re
+
 from schema import Schema, And, Or, Optional, Use
 
 PositiveInt = And(int, lambda x: x >= 1)
+
+_CDC_RE = re.compile(r'^(FF|VEC|VECP)(\d+)$')
+
+
+def validate_cdc(v):
+    """Validate a CDC type string.
+
+    Valid values are NONE or a family (FF, VEC, VECP) followed by the number of
+    synchronizer stages, which must be at least 2.
+
+    Args:
+        v: CDC type string from the register configuration
+
+    Returns:
+        Validated CDC type string
+
+    Raises:
+        ValueError: If the CDC type is not NONE or a valid family with at least
+          2 stages
+    """
+    if v == 'NONE':
+        return v
+
+    match = _CDC_RE.match(v)
+    if match is None:
+        raise ValueError(
+            f"Invalid CDC type '{v}'. Expected NONE or FFn/VECn/VECPn (n >= 2)"
+        )
+    if int(match.group(2)) < 2:
+        raise ValueError(f"Invalid CDC type '{v}'. At least 2 stages are required")
+
+    return v
 
 
 def anyToInt(v):
@@ -56,6 +90,13 @@ SCHEMA = Schema(
                 Optional('use_upd_pulse', default=False): bool,
                 Optional('addr_offset'): int,
                 Optional('instance'): str,
+                Optional('clk', default='default'): Or(
+                    str,
+                    {
+                        'name': str,
+                        Optional('CDC', default='NONE'): Use(validate_cdc),
+                    },
+                ),
                 'bits': Or(
                     PositiveInt,
                     {

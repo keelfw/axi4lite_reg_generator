@@ -21,14 +21,71 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import jinja2
 import datetime
 import hashlib
 import axi4lite_reg_generator
 import axi4lite_reg_generator.filters as filters
-from axi4lite_reg_generator.schema import SCHEMA as Schema
+from axi4lite_reg_generator.schema import SCHEMA as Schema, validate_cdc
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+cdc_dir = os.path.join(os.path.dirname(__file__), 'cdc')
+
+# Port names of the generated AXI clock/reset. A non-default clock may not use
+# either of these names.
+_AXI_PORT_NAMES = ('REGS_ACLK', 'REGS_ARESETN')
+
+_CDC_FAMILY_RE = re.compile(r'^(FF|VEC|VECP)(\d+)$')
+
+
+def cdc_family(cdc: str) -> tuple:
+    """Split a validated CDC string into family and stage count.
+
+    NONE returns ('NONE', None).
+
+    Args:
+        cdc: Validated CDC type string
+
+    Returns:
+        Tuple containing:
+            - CDC family name
+            - Number of synchronizer stages, or None for NONE
+    """
+    if cdc == 'NONE':
+        return 'NONE', None
+    match = _CDC_FAMILY_RE.match(cdc)
+    return match.group(1), int(match.group(2))
+
+
+def cdc_module(family: str, num_bits: int) -> str | None:
+    """Get the CDC primitive module required for a signal direction.
+
+    None means the signal is wired straight through (NONE). The families map
+    onto the Xilinx XPM CDC macros they mirror:
+    - FF: cdc_ff (xpm_cdc_array_single), per-bit, non-atomic
+    - VEC: cdc_vec (xpm_cdc_handshake, internally paced)
+    - VECP: cdc_vecp (xpm_cdc_handshake, external src_send)
+
+    Args:
+        family: CDC family name
+        num_bits: Width of the signal being synchronized
+
+    Returns:
+        CDC primitive module name, or None when no primitive is needed
+
+    Raises:
+        ValueError: If the CDC family is unknown
+    """
+    if family is None or family == 'NONE':
+        return None
+    if family == 'VECP':
+        return 'cdc_vecp'
+    if family == 'VEC':
+        return 'cdc_vec'
+    if family == 'FF':
+        return 'cdc_ff'
+    raise ValueError(f'Unknown CDC family: {family}')
 
 
 class RegDef:
@@ -86,6 +143,16 @@ class RegDef:
         self._find_duplicate_names()
         self._check_regs_too_large()
 
+        # Resolve clock domains / CDC. Kept separate from _cfg so that _cfg stays
+        # schema-valid and round-trips through get_reg_json().
+        self._domains = {}
+        self._regs = []
+        self._resolve_clocks()
+        self._has_cdc = len(self._domains) > 0
+        self._entity_name = self._reg_cfg['entity_name']
+        self._entity_name_cdc = self._entity_name + '_cdc'
+        self._domain_list = list(self._domains.values())
+
     def __str__(self) -> str:
         """Convert register configuration to string.
 
@@ -106,6 +173,109 @@ class RegDef:
         full_cfg = self._cfg.copy()
         full_cfg.insert(0, dict(config=self._reg_cfg))
         return json.dumps(full_cfg, indent=indent)
+
+    def _resolve_clocks(self) -> None:
+        """Resolve each register's clock domain and CDC settings.
+
+        Populates self._regs with copies of the self._cfg entries that carry
+        resolved clock metadata, and self._domains with the unique non-default
+        clock domains.
+
+        Raises:
+            ValueError: If a clock name collides with the AXI port, or a CDC
+              type is invalid
+        """
+        for reg in self._cfg:
+            clk = reg.get('clk', 'default')
+            domain = None
+            cdc = 'NONE'
+
+            if isinstance(clk, dict):
+                domain = clk['name']
+                cdc = clk.get('CDC', 'NONE')
+                if domain == 'default':
+                    raise ValueError(
+                        'The AXI domain must be selected with the string '
+                        "'default' (or by omitting 'clk'), not a clock object "
+                        "named 'default'"
+                    )
+            elif clk != 'default':
+                domain = clk
+
+            if domain is not None:
+                if domain.upper() in _AXI_PORT_NAMES:
+                    raise ValueError(
+                        f"Clock name '{domain}' collides with the AXI clock port; "
+                        "use 'default' for the AXI domain"
+                    )
+                label = domain.upper()
+                self._domains.setdefault(
+                    label,
+                    dict(
+                        name=domain,
+                        label=label,
+                        clk_port=f'CLK_{label}',
+                        rstn_port=f'RSTN_{label}',
+                    ),
+                )
+
+            family, stages = cdc_family(validate_cdc(cdc))
+            num_bits = filters.count_bits(reg['bits'])
+
+            read_family = read_stages = read_module = None
+            write_family = write_stages = write_module = None
+            reg_type = reg['reg_type']
+            if reg_type in ('ro', 'custom'):
+                read_family, read_stages = family, stages
+                read_module = cdc_module(read_family, num_bits)
+            if reg_type in ('rw', 'custom'):
+                write_family, write_stages = family, stages
+                # The write side always has a pulse available, so VEC is
+                # promoted to VECP there.
+                if write_family == 'VEC':
+                    write_family = 'VECP'
+                write_module = cdc_module(write_family, num_bits)
+
+            needs_pulse = bool(reg.get('use_upd_pulse', False)) or (
+                write_family == 'VECP'
+            )
+
+            resolved = dict(reg)
+            resolved.update(
+                domain=domain,
+                domain_label=(domain.upper() if domain else None),
+                qualified_name=(
+                    f'{domain.upper()}_{reg["name"]}' if domain else reg['name']
+                ),
+                clk_port=(f'CLK_{domain.upper()}' if domain else None),
+                rstn_port=(f'RSTN_{domain.upper()}' if domain else None),
+                read_family=read_family,
+                read_stages=read_stages,
+                read_module=read_module,
+                write_family=write_family,
+                write_stages=write_stages,
+                write_module=write_module,
+                needs_pulse=needs_pulse,
+            )
+            self._regs.append(resolved)
+
+    def cdc_modules_used(self) -> set:
+        """Get the CDC primitive modules required by this design.
+
+        Returns:
+            Set of CDC primitive module names
+        """
+        modules = set()
+        for reg in self._regs:
+            if reg['read_module']:
+                modules.add(reg['read_module'])
+            if reg['write_module']:
+                modules.add(reg['write_module'])
+                # Write-side update pulses that are not carried by a VECP
+                # handshake dest_req are synchronized with a cdc_ff instance.
+                if reg['use_upd_pulse'] and reg['write_module'] != 'cdc_vecp':
+                    modules.add('cdc_ff')
+        return modules
 
     def _flatten_heirarchy(
         self,
@@ -298,6 +468,42 @@ class RegDef:
         code = self._render_template('axi4lite_template.h')
         return code[0] + '\n// SHA-256: ' + code[1]
 
+    def to_vhdl_cdc(self) -> str | None:
+        """Generate VHDL CDC wrapper code.
+
+        Returns:
+            Generated VHDL CDC wrapper as string, or None when no CDC is
+              configured
+        """
+        if not self._has_cdc:
+            return None
+        code = self._render_template('cdc_wrapper_template.vhd')
+        return code[0] + '\n-- SHA-256: ' + code[1]
+
+    def to_verilog_cdc(self) -> str | None:
+        """Generate Verilog CDC wrapper code.
+
+        Returns:
+            Generated Verilog CDC wrapper as string, or None when no CDC is
+              configured
+        """
+        if not self._has_cdc:
+            return None
+        code = self._render_template('cdc_wrapper_template.v')
+        return code[0] + '\n// SHA-256: ' + code[1]
+
+    def to_systemverilog_cdc(self) -> str | None:
+        """Generate SystemVerilog CDC wrapper code.
+
+        Returns:
+            Generated SystemVerilog CDC wrapper as string, or None when no CDC
+              is configured
+        """
+        if not self._has_cdc:
+            return None
+        code = self._render_template('cdc_wrapper_template.sv')
+        return code[0] + '\n// SHA-256: ' + code[1]
+
     def _render_template(
         self, template_file: str, template_dir: str = template_dir
     ) -> tuple[str, str]:
@@ -332,7 +538,10 @@ class RegDef:
             id_hostname=self.id_hostname,
             id_timestamp=self.id_timestamp,
             id_version=self.id_version,
-            regs=self._cfg,
+            regs=self._regs,
+            domains=self._domain_list,
+            has_cdc=self._has_cdc,
+            entity_name_cdc=self._entity_name_cdc,
             **self._reg_cfg,
         )
         rendered_template = template.render(_tmp)

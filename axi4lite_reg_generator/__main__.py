@@ -17,8 +17,10 @@
 # See LICENSE file for full license details.
 import argparse
 import os
+import shutil
 import sys
 import axi4lite_reg_generator
+from axi4lite_reg_generator.regdef import cdc_dir
 
 
 def report_file_exists(file: str) -> bool:
@@ -26,6 +28,22 @@ def report_file_exists(file: str) -> bool:
         print(f'File does not exist: {file}', file=sys.stderr)
         return False
     return True
+
+
+def copy_cdc_primitives(output_base: str, modules: set) -> None:
+    """Copy required CDC primitives next to the generated output.
+
+    Args:
+        output_base: Base path of the generated output files
+        modules: Set of CDC primitive module names to copy
+    """
+    out_dir = os.path.dirname(output_base) or '.'
+    for module in sorted(modules):
+        for ext in ('vhd', 'v', 'sv'):
+            src = os.path.join(cdc_dir, f'{module}.{ext}')
+            dst = os.path.join(out_dir, f'{module}.{ext}')
+            shutil.copyfile(src, dst)
+            print(f'Copying CDC primitive to: {dst}')
 
 
 def main():
@@ -77,6 +95,18 @@ def main():
     with open(fname := (args.output + '.h'), 'w') as f_out:
         print(f'Writing C/C++ Header to: {fname}')
         f_out.write(regs.to_header())
+
+    if regs._has_cdc:
+        with open(fname := (args.output + '_cdc.vhd'), 'w') as f_out:
+            print(f'Writing VHDL CDC wrapper to: {fname}')
+            f_out.write(regs.to_vhdl_cdc())
+        with open(fname := (args.output + '_cdc.v'), 'w') as f_out:
+            print(f'Writing Verilog CDC wrapper to: {fname}')
+            f_out.write(regs.to_verilog_cdc())
+        with open(fname := (args.output + '_cdc.sv'), 'w') as f_out:
+            print(f'Writing SystemVerilog CDC wrapper to: {fname}')
+            f_out.write(regs.to_systemverilog_cdc())
+        copy_cdc_primitives(args.output, regs.cdc_modules_used())
 
 
 if __name__ == '__main__':

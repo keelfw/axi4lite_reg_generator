@@ -468,3 +468,296 @@ def test_custom_entity_name():
     assert re_search.group(1) == test_override_entity_name, (
         f'Markdown title should be {test_override_entity_name}, but is {re_search.group(1)}'
     )
+
+
+# ---------------------------------------------------------------------------
+# Clock Domain Crossing (CDC)
+# ---------------------------------------------------------------------------
+
+CDC_CONFIG = [
+    {
+        'config': {
+            'data_size': 32,
+            'include_username': False,
+            'include_hostname': False,
+            'include_timestamp': False,
+        }
+    },
+    {'name': 'RO_AXI', 'reg_type': 'ro', 'bits': 32},
+    {'name': 'RW_AXI', 'reg_type': 'rw', 'use_upd_pulse': True, 'bits': 32},
+    {
+        'name': 'RW_OTHER',
+        'clk': {'name': 'other', 'CDC': 'VEC2'},
+        'reg_type': 'rw',
+        'use_upd_pulse': True,
+        'bits': 32,
+    },
+    {
+        'name': 'RO_OTHER',
+        'clk': {'name': 'other', 'CDC': 'VEC2'},
+        'reg_type': 'ro',
+        'bits': 8,
+    },
+    {
+        'name': 'CUST_FAST',
+        'clk': {'name': 'fast', 'CDC': 'VECP3'},
+        'reg_type': 'custom',
+        'bits': 16,
+    },
+    {
+        'name': 'FLAG_OTHER',
+        'clk': {'name': 'other', 'CDC': 'FF2'},
+        'reg_type': 'rw',
+        'use_upd_pulse': True,
+        'bits': 1,
+    },
+]
+
+
+def cdc_config():
+    """Create a fresh copy of the CDC test configuration.
+
+    RegDef mutates the configuration it is given, so each test needs its own
+    copy.
+
+    Returns:
+        Copy of the CDC test configuration
+    """
+    return json.loads(json.dumps(CDC_CONFIG))
+
+
+def test_cdc_resolution():
+    """Test clock-domain resolution on the resolved register view.
+
+    Tests:
+        1. Verifies non-default domains are collected with clock/reset ports
+        2. Verifies register names are qualified with the domain label
+        3. Verifies write-side VEC is promoted to VECP
+        4. Verifies read/write CDC modules and stage counts
+        5. Verifies update pulses are enabled where required
+    """
+    reg = axi4lite_reg_generator.RegDef(cdc_config())
+    regs = {r['name']: r for r in reg._regs}
+
+    assert reg._has_cdc is True
+    assert reg._entity_name == 'reg_file'
+    assert reg._entity_name_cdc == 'reg_file_cdc'
+    assert set(d['label'] for d in reg._domain_list) == {'OTHER', 'FAST'}
+    assert {d['clk_port'] for d in reg._domain_list} == {'CLK_OTHER', 'CLK_FAST'}
+    assert {d['rstn_port'] for d in reg._domain_list} == {'RSTN_OTHER', 'RSTN_FAST'}
+
+    rw_other = regs['RW_OTHER']
+    assert rw_other['domain'] == 'other'
+    assert rw_other['domain_label'] == 'OTHER'
+    assert rw_other['qualified_name'] == 'OTHER_RW_OTHER'
+    assert rw_other['clk_port'] == 'CLK_OTHER'
+    assert rw_other['rstn_port'] == 'RSTN_OTHER'
+    # Write-side VEC is promoted to VECP
+    assert rw_other['write_family'] == 'VECP'
+    assert rw_other['write_module'] == 'cdc_vecp'
+    assert rw_other['write_stages'] == 2
+    assert rw_other['read_family'] is None
+    assert rw_other['read_module'] is None
+    # Pulse needed because of use_upd_pulse and because of VECP
+    assert rw_other['needs_pulse'] is True
+
+    ro_other = regs['RO_OTHER']
+    assert ro_other['read_family'] == 'VEC'
+    assert ro_other['read_module'] == 'cdc_vec'
+    assert ro_other['read_stages'] == 2
+    assert ro_other['write_family'] is None
+    assert ro_other['needs_pulse'] is False
+
+    cust_fast = regs['CUST_FAST']
+    assert cust_fast['read_module'] == 'cdc_vecp'
+    assert cust_fast['write_module'] == 'cdc_vecp'
+    assert cust_fast['qualified_name'] == 'FAST_CUST_FAST'
+
+    # 1-bit FF write uses the array synchronizer
+    flag_other = regs['FLAG_OTHER']
+    assert flag_other['write_family'] == 'FF'
+    assert flag_other['write_module'] == 'cdc_ff'
+    assert flag_other['write_stages'] == 2
+    assert flag_other['needs_pulse'] is True
+
+    rw_axi = regs['RW_AXI']
+    assert rw_axi['domain'] is None
+    assert rw_axi['write_module'] is None
+    assert rw_axi['needs_pulse'] is True
+    assert rw_axi['qualified_name'] == 'RW_AXI'
+
+    ro_axi = regs['RO_AXI']
+    assert ro_axi['domain'] is None
+    assert ro_axi['qualified_name'] == 'RO_AXI'
+
+
+def test_cdc_wrapper_generation():
+    """Test CDC wrapper generation for all three languages.
+
+    Tests:
+        1. Verifies VHDL wrapper entity, ports, and primitives
+        2. Verifies Verilog wrapper module, parameters, and connections
+        3. Verifies SystemVerilog wrapper module and connections
+        4. Verifies each wrapper contains a SHA-256 hash
+    """
+    reg = axi4lite_reg_generator.RegDef(cdc_config())
+    vhdl = reg.to_vhdl_cdc()
+    verilog = reg.to_verilog_cdc()
+    sv = reg.to_systemverilog_cdc()
+
+    assert vhdl is not None and verilog is not None and sv is not None
+
+    assert 'entity reg_file_cdc is' in vhdl
+    assert 'CLK_OTHER' in vhdl
+    assert 'CLK_FAST' in vhdl
+    # The CDC primitives are reset-free (matching XPM), so the wrapper no longer
+    # has per-domain reset ports.
+    assert 'RSTN_OTHER' not in vhdl
+    assert 'RSTN_FAST' not in vhdl
+    assert 'R_RW_AXI_O' in vhdl
+    assert 'OTHER_RW_OTHER_O' in vhdl
+    assert 'OTHER_RW_OTHER_O_upd' in vhdl
+    assert 'OTHER_RO_OTHER_I' in vhdl
+    assert 'FAST_CUST_FAST_I_upd' in vhdl
+    assert 'entity work.reg_file' in vhdl
+    assert 'entity work.cdc_vecp' in vhdl
+    assert 'entity work.cdc_vec' in vhdl
+    assert 'entity work.cdc_ff' in vhdl
+    assert '-- SHA-256: ' in vhdl
+
+    assert 'module reg_file_cdc' in verilog
+    assert 'module reg_file base_i' not in verilog
+    assert 'reg_file #(' in verilog
+    assert '.ADDRESS_W(ADDRESS_W)' in verilog
+    assert 'cdc_vecp #(' in verilog and 'cdc_vec #(' in verilog
+    assert 'cdc_ff #(' in verilog
+    # Write-side VECP drives its update pulse from the handshake dest_req.
+    assert '.dest_req (OTHER_RW_OTHER_O_upd)' in verilog
+    # Read-side VECP takes the external send pulse.
+    assert '.src_send (FAST_CUST_FAST_I_upd)' in verilog
+    # The source clock is the non-default domain clock, not regs_aclk.
+    assert '.src_clk  (CLK_OTHER)' in verilog
+    assert '// SHA-256: ' in verilog
+
+    assert 'module reg_file_cdc' in sv
+    assert 'logic' in sv
+    assert '.dest_req (OTHER_RW_OTHER_O_upd)' in sv
+    assert '// SHA-256: ' in sv
+
+
+def test_no_cdc_no_wrapper():
+    """Test that no wrapper is generated without a non-default clock domain.
+
+    Tests:
+        1. Verifies CDC is not detected in the default configuration
+        2. Verifies VHDL, Verilog, and SystemVerilog wrappers return None
+        3. Verifies no CDC primitives are reported as used
+    """
+    reg = axi4lite_reg_generator.RegDef.from_json_file(json_file_path)
+    assert reg._has_cdc is False
+    assert reg.to_verilog_cdc() is None
+    assert reg.to_vhdl_cdc() is None
+    assert reg.to_systemverilog_cdc() is None
+    assert reg.cdc_modules_used() == set()
+
+
+def test_cdc_modules_used():
+    """Test the set of required CDC primitives.
+
+    Tests:
+        1. Verifies the FF array primitive is required
+        2. Verifies both handshake primitives are required
+    """
+    reg = axi4lite_reg_generator.RegDef(cdc_config())
+    assert reg.cdc_modules_used() == {'cdc_ff', 'cdc_vec', 'cdc_vecp'}
+
+
+@pytest.mark.parametrize('cdc', ['FF1', 'VEC1', 'VECP1', 'FF0', 'BOGUS', 'VEC'])
+def test_cdc_bad_type_rejected(cdc):
+    """Test rejection of invalid CDC types.
+
+    Tests:
+        1. Attempts CDC types with too few stages
+        2. Attempts malformed and unknown CDC types
+        3. Verifies SchemaError is raised
+
+    Raises:
+        schema.SchemaError: When the CDC type is invalid
+    """
+    cfg = [
+        {'config': {'data_size': 32}},
+        {'name': 'X', 'clk': {'name': 'other', 'CDC': cdc}, 'bits': 32},
+    ]
+    with pytest.raises(schema.SchemaError):
+        axi4lite_reg_generator.RegDef(cfg)
+
+
+def test_cdc_axi_clock_collision():
+    """Test rejection of a non-default clock reusing the AXI clock port name.
+
+    Tests:
+        1. Creates a register with a clock named REGS_ACLK
+        2. Verifies ValueError is raised with the collision message
+
+    Raises:
+        ValueError: When a clock name collides with the AXI clock port
+    """
+    cfg = [
+        {'config': {'data_size': 32}},
+        {'name': 'X', 'clk': {'name': 'REGS_ACLK', 'CDC': 'VEC2'}, 'bits': 32},
+    ]
+    with pytest.raises(ValueError) as e_info:
+        axi4lite_reg_generator.RegDef(cfg)
+    assert 'collides with the AXI clock port' in str(e_info.value)
+
+
+def test_cdc_default_named_clock_rejected():
+    """Test rejection of a clock object named 'default'.
+
+    Tests:
+        1. Creates a register with a clock object named 'default'
+        2. Verifies ValueError is raised with the ambiguity message
+
+    Raises:
+        ValueError: When the AXI domain is selected with a clock object
+    """
+    cfg = [
+        {'config': {'data_size': 32}},
+        {'name': 'X', 'clk': {'name': 'default', 'CDC': 'VEC2'}, 'bits': 32},
+    ]
+    with pytest.raises(ValueError) as e_info:
+        axi4lite_reg_generator.RegDef(cfg)
+    assert 'AXI domain must be selected with the string' in str(e_info.value)
+
+
+def test_cdc_md_domain_column():
+    """Test clock-domain reporting in generated documentation.
+
+    Tests:
+        1. Verifies the register table has a clock column
+        2. Verifies the non-default domain is listed
+        3. Verifies the clock domain section is generated
+    """
+    reg = axi4lite_reg_generator.RegDef(cdc_config())
+    md = reg.to_md()
+    assert '| Address | Name | Type | Clock |' in md
+    assert '| OTHER ' in md
+    assert '**Clock Domain**: OTHER' in md
+
+
+def test_cdc_json_roundtrip():
+    """Test JSON serialization and deserialization of clock settings.
+
+    Tests:
+        1. Converts register configuration to JSON
+        2. Creates new register definition from JSON
+        3. Verifies configurations match
+        4. Verifies generated Verilog and CDC wrappers match
+    """
+    reg = axi4lite_reg_generator.RegDef(cdc_config(), test_dir)
+    cfg_new = json.loads(reg.get_reg_json())
+    reg_new = axi4lite_reg_generator.RegDef(cfg_new, test_dir)
+
+    assert reg._cfg == reg_new._cfg
+    assert reg.to_verilog() == reg_new.to_verilog()
+    assert reg.to_verilog_cdc() == reg_new.to_verilog_cdc()

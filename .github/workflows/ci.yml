@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
-      - 56-migrate-away-from-dsim-cloud
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
@@ -15,12 +14,8 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.15']
-        include:
-          - python-version: '3.15'
-            experimental: true
-      # Continue running other versions even if experimental ones fail
+      # Continue running other versions if one of them fails
       fail-fast: false
-    continue-on-error: ${{ matrix.experimental || false }}
     steps:
     - name: Check out repository
       uses: actions/checkout@v7
@@ -39,14 +34,6 @@ jobs:
         uv sync --extra dev
     - name: Run tests
       run: uv run pytest test/test_regdef.py test/test_argparse.py test/test_validate.py
-      continue-on-error: ${{ matrix.experimental || false }}
-    - name: Upload test results for experimental versions
-      if: matrix.experimental && always()
-      uses: actions/upload-artifact@v6
-      with:
-        name: test-results-python-${{ matrix.python-version }}
-        path: test-results/
-        retention-days: 7
 
   test_rtl:
     runs-on: ubuntu-latest
