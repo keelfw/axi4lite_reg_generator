@@ -27,6 +27,25 @@ def generate_dut():
     )
 
 
+def generate_cdc_dut():
+    out_dir = os.path.join(VERIFICATION_DIR, 'cdc_dut')
+    os.makedirs(out_dir, exist_ok=True)
+    subprocess.run(
+        [
+            'uv',
+            'run',
+            'python',
+            '-m',
+            'axi4lite_reg_generator',
+            os.path.join(REPO_ROOT, 'example', 'inputs', 'example_cdc.json'),
+            '--output',
+            os.path.join(out_dir, 'cdc_example'),
+        ],
+        check=True,
+        cwd=REPO_ROOT,
+    )
+
+
 HAS_VERILATOR = shutil.which('verilator') is not None
 HAS_GHDL = shutil.which('ghdl') is not None
 
@@ -84,3 +103,74 @@ def test_ghdl(register_inputs, example_outputs):
         log_file=os.path.join(build_dir, 'sim.log'),
         verbose=True,
     )
+
+
+@pytest.mark.parametrize('language', ['sv', 'v'])
+def test_verilator_cdc(language):
+    """Test the CDC wrapper with Verilator.
+
+    Tests:
+        1. Generates the CDC example register file and wrapper
+        2. Builds the wrapper with the required CDC primitives
+        3. Runs the CDC testbench
+    """
+    if not HAS_VERILATOR:
+        pytest.skip('verilator not found')
+    generate_cdc_dut()
+    d = os.path.join(VERIFICATION_DIR, 'cdc_dut')
+    sources = [
+        Verilog(os.path.join(d, f'cdc_example.{language}')),
+        Verilog(os.path.join(d, f'cdc_example_cdc.{language}')),
+    ] + [
+        Verilog(os.path.join(d, f'{m}.{language}'))
+        for m in ('cdc_ff', 'cdc_vec', 'cdc_vecp')
+    ]
+    build_dir = f'sim_build/cdc_verilator_{language}'
+
+    sim = get_runner('verilator')
+    sim.build(
+        sources=sources,
+        hdl_toplevel='cdc_example_cdc',
+        parameters={'REGISTER_INPUTS': 0},
+        build_dir=build_dir,
+        always=True,
+        timescale=('1ns', '1ns'),
+    )
+    sim.test(
+        test_module='tb_cdc',
+        hdl_toplevel='cdc_example_cdc',
+        build_dir=build_dir,
+        log_file=os.path.join(build_dir, 'sim.log'),
+        verbose=True,
+    )
+
+
+def test_ghdl_cdc():
+    """Test CDC wrapper compilation and elaboration with GHDL.
+
+    Tests:
+        1. Generates the CDC example register file and wrapper
+        2. Analyzes all VHDL sources with GHDL
+        3. Elaborates the CDC wrapper
+    """
+    if not HAS_GHDL:
+        pytest.skip('ghdl not found')
+    generate_cdc_dut()
+    d = os.path.join(VERIFICATION_DIR, 'cdc_dut')
+    vhd = [
+        'cdc_ff.vhd',
+        'cdc_vec.vhd',
+        'cdc_vecp.vhd',
+        'cdc_example.vhd',
+        'cdc_example_cdc.vhd',
+    ]
+
+    r = subprocess.run(['ghdl', '-a', '--std=08', *vhd], cwd=d)
+    assert r.returncode == 0
+    r = subprocess.run(['ghdl', '-e', '--std=08', 'cdc_example_cdc'], cwd=d)
+    assert r.returncode == 0
+
+    # Remove the work library artifacts created by GHDL
+    for f in os.listdir(d):
+        if f.endswith('.cf') or f.endswith('.o'):
+            os.remove(os.path.join(d, f))

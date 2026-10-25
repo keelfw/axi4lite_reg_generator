@@ -44,7 +44,7 @@ port (
   {% endif -%}
   {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
   R_{{ reg['name'] }}_O :  out std_logic_vector({{ reg['bits']|count_bits - 1 }} downto 0);
-  {% if reg['use_upd_pulse'] -%}
+  {% if reg['needs_pulse'] -%}
   R_{{ reg['name'] }}_O_upd : out std_logic;
   {% endif -%}
   {% endif -%}
@@ -231,7 +231,7 @@ begin
         {%- for reg in regs -%}
         {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
         REG_{{ reg['name'] }}_W <= {{ reg|default_val }};
-        {%- if reg['use_upd_pulse'] %}
+        {%- if reg['needs_pulse'] %}
         R_{{ reg['name'] }}_O_upd <= '0';
         {%- endif %}
         {%- endif %}
@@ -239,7 +239,7 @@ begin
       else
         {%- for reg in regs -%}
         {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
-        {%- if reg['use_upd_pulse'] %}
+        {%- if reg['needs_pulse'] %}
         R_{{ reg['name'] }}_O_upd <= '0';
         {%- endif %}
         {%- endif %}
@@ -248,7 +248,7 @@ begin
           {% for reg in regs -%}
           {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
           if address_wr = REG_{{ reg['name'] }}_ADDR then
-            {%- if reg['use_upd_pulse'] %}
+            {%- if reg['needs_pulse'] %}
             R_{{ reg['name'] }}_O_upd <= '1';
             {%- endif %}
             REGS_BRESP <= AXI_RESP_OKAY;

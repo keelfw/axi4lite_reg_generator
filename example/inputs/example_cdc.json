@@ -1,0 +1,59 @@
+[
+  {
+    "config": {
+      "data_size": 32,
+      "include_username": false,
+      "include_hostname": false,
+      "include_timestamp": false
+    }
+  },
+  {
+    "name": "Version",
+    "description": "Version register, AXI clock domain",
+    "reg_type": "ro",
+    "bits": 32,
+    "addr_offset": 0
+  },
+  {
+    "name": "Scratch",
+    "description": "Scratch register, AXI clock domain",
+    "reg_type": "rw",
+    "use_upd_pulse": true,
+    "bits": 32,
+    "addr_offset": 4
+  },
+  {
+    "name": "Control",
+    "description": "Control word written into the OTHER clock domain (write-side VECP)",
+    "clk": { "name": "other", "CDC": "VECP2" },
+    "reg_type": "rw",
+    "use_upd_pulse": true,
+    "bits": 32,
+    "addr_offset": 8
+  },
+  {
+    "name": "Status",
+    "description": "Status word read from the OTHER clock domain (read-side VEC)",
+    "clk": { "name": "other", "CDC": "VEC2" },
+    "reg_type": "ro",
+    "bits": 16,
+    "addr_offset": 12
+  },
+  {
+    "name": "Flag",
+    "description": "Single-bit flag written into the OTHER clock domain (FF)",
+    "clk": { "name": "other", "CDC": "FF2" },
+    "reg_type": "rw",
+    "use_upd_pulse": true,
+    "bits": 1,
+    "addr_offset": 16
+  },
+  {
+    "name": "Event",
+    "description": "Event code pulsed into the AXI domain from the OTHER clock domain (read-side VECP)",
+    "clk": { "name": "other", "CDC": "VECP2" },
+    "reg_type": "ro",
+    "bits": 8,
+    "addr_offset": 20
+  }
+]

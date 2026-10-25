@@ -38,7 +38,7 @@ module {{ entity_name }} #(
   {% endif -%}
   {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
   output wire [{{ reg['bits']|count_bits - 1 }}:0] R_{{ reg['name'] }}_O,
-  {% if reg['use_upd_pulse'] -%}
+  {% if reg['needs_pulse'] -%}
   output reg R_{{ reg['name'] }}_O_upd,
   {% endif -%}
   {% endif -%}
@@ -240,7 +240,7 @@ always @(posedge regs_aclk) begin
     {%- for reg in regs -%}
     {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
     REG_{{ reg['name'] }}_W <= {{ reg|default_val_v }};
-    {%- if reg['use_upd_pulse'] %}
+    {%- if reg['needs_pulse'] %}
     R_{{ reg['name'] }}_O_upd <= 0;
     {%- endif %}
     {%- endif %}
@@ -249,7 +249,7 @@ always @(posedge regs_aclk) begin
   else begin
     {%- for reg in regs -%}
     {%- if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' %}
-    {%- if reg['use_upd_pulse'] %}
+    {%- if reg['needs_pulse'] %}
     R_{{ reg['name'] }}_O_upd <= 0;
     {%- endif %}
     {%- endif %}
@@ -258,7 +258,7 @@ always @(posedge regs_aclk) begin
       {% for reg in regs -%}
       {% if reg['reg_type'] == 'rw' or reg['reg_type'] == 'custom' -%}
       if (address_wr == REG_{{ reg['name'] }}_ADDR) begin
-        {%- if reg['use_upd_pulse'] %}
+        {%- if reg['needs_pulse'] %}
         R_{{ reg['name'] }}_O_upd <= 1;
         {%- endif %}
         regs_bresp <= AXI_RESP_OKAY;

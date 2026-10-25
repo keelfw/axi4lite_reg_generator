@@ -169,3 +169,4 @@ cython_debug/
 # Compiled vhdl and simulations
 sim_build
 work-*.cf
+*.o

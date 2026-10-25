@@ -7,6 +7,7 @@ Automatically generates:
 * Synthesizable System Verilog
 * Register documentation in the form of Markdown
 * `.h` file which can be used for software driver
+* Optional [clock domain crossing](#clock-domain-crossing-cdc) wrapper for registers that live in other clock domains
 
 # Example
 
@@ -65,6 +66,7 @@ This documentation describes the schema used by the json configuration data. The
 | reg_type      | no       | enum(ro,rw,custom) | ro      | Type of register                                    |
 | addr_offset   | no       | int                | *       | Address byte offset                                 |
 | use_upd_pulse | no       | boolean            | false   | Add _upd signal on output indicating register write |
+| clk           | no       | str or object      | "default" | Clock domain (and optional CDC) for the register  |
 | bits          | yes      | see below          | N/A     | Bit definition of register                          |
 
 \* If addr_offset byte address is not specified, next byte address will be used. In the example above, the first register will have address `0x00`, the next address will have `0x04` since this is a 32-bit data bus width. If an additional register was put after "Register_with_Fields" (address 64 or `0x40`) it would have address `0x44`.
@@ -163,6 +165,51 @@ This results in a register map with `Heir_Register_Top` at address 0 and heirarc
 
 ## Resulting Register Naming Convention
 When using heirarchy, the subordinate heirarchical names are prepended with the parent names. By default, they are separated using the `_` character, but this can be changed in the configuration by setting the `instance_separator` value. Prepending the parent prevents naming conflicts in the generated RTL.
+
+## Clock Domain Crossing (CDC)
+By default every register lives in the AXI clock domain (`regs_aclk` / `regs_aresetn`). A register can instead be placed in another clock domain by giving it a `clk` field. When at least one register uses a non-default clock domain, an additional hand-written CDC wrapper is generated alongside the register file.
+
+The `clk` field accepts:
+
+* `"default"` (or omitting `clk` entirely): the register is in the AXI clock domain.
+* An object `{ "name": "<domain>", "CDC": "<type>" }`: the register is in the `<domain>` clock domain and its signals cross the domain boundary using `<type>`. If `CDC` is omitted it defaults to `NONE`.
+
+```json
+{
+    "name" : "Control",
+    "description" : "Written from AXI, used in the 'other' clock domain",
+    "clk" : { "name" : "other", "CDC" : "VECP2" },
+    "reg_type" : "rw",
+    "use_upd_pulse" : true,
+    "bits" : 32
+}
+```
+
+### CDC types
+The `CDC` value is one of:
+
+| type   | description                                                                                       |
+| -----  | -----------                                                                                       |
+| NONE   | No crossing logic is inserted; the register is simply clocked by the named domain's clock.        |
+| FFn    | Array synchronizer (`cdc_ff`, like `xpm_cdc_array_single`): each bit is synchronized through `n` destination flip-flops. This is per-bit only, so the bits are not guaranteed to change coherently; use it for quasi-static data or bits that change one at a time. |
+| VECn   | Atomic multi-bit transfer with an internally paced handshake (`cdc_vec`, like `xpm_cdc_handshake`). A new transfer starts as soon as the previous one is acknowledged, so an input that changes on its own is transferred continuously but always coherently. Intended for read (into AXI) registers. |
+| VECPn  | Atomic multi-bit transfer gated by an external transfer pulse (`cdc_vecp`, like `xpm_cdc_handshake`). The source presents `src_in` and asserts `src_send`; the destination captures the data and emits a one-cycle `dest_req` pulse. Used for coherent pulsed updates. |
+
+`n` is the number of synchronizer flip-flop stages (the XPM `DEST_SYNC_FF`), and must be at least 2 (`FF1`, `VEC1`, and `VECP1` are rejected).
+
+The write side of the register file always produces an update pulse, so a write-side `VECn` is promoted to `VECPn`
+
+### Generated wrapper
+The wrapper is emitted as `<entity>_cdc.{v,sv,vhd}` and instantiates the normal register file plus the CDC primitives (`cdc_ff`, `cdc_vec`, `cdc_vecp`, copied next to the output files). These are vendor-neutral equivalents of the Xilinx XPM CDC macros and, like the macros, have **no reset pin**; their state is initialized by `INIT_SYNC_FF` / GSR rather than by a reset. It becomes the new top level of the design. When no register uses a non-default clock domain the wrapper is not generated and the output is unchanged.
+
+The wrapper adds:
+
+* One `CLK_<DOMAIN>` port per unique non-default clock domain. For a domain named `other` this is `CLK_OTHER`. The AXI domain keeps `regs_aclk` / `regs_aresetn`. Because the CDC primitives are reset-free, no per-domain reset port is generated.
+* Register I/O ports. Registers in the AXI domain keep their `R_<name>_I` / `R_<name>_O` / `R_<name>_O_upd` names. Registers in a non-default domain are prefixed with the uppercased domain name, for example `OTHER_Control_O` and `OTHER_Control_O_upd` (the register name itself keeps its original case).
+
+The clock domain name `default` is reserved, and `regs_aclk` / `REGS_ACLK` (or `regs_aresetn` / `REGS_ARESETN`) are not valid clock domain names &mdash; use `"default"` for the AXI domain.
+
+An example using every CDC type is provided in [example/inputs/example_cdc.json](example/inputs/example_cdc.json) with generated RTL under [example/outputs](example/outputs).
 
 # Automated Documentation
 When creating the register file, a markdown file with the register configuration is also created. This file will be saved in the same output directory as the VHDL, Verilog, and System Verilog files.
