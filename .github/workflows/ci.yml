@@ -3,14 +3,40 @@ on:
   push:
     branches:
       - main  # Run the tests on push to main branch
+      - 62-update-dependency-versions
   pull_request:
     branches:
       - main  # Run the tests on PRs to main branch
   schedule:
     - cron: "0 3 * * 0"  # Fixed: missing space in cron expression
 jobs:
+  build_verilator:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Verilator build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git make autoconf g++ flex bison libfl-dev help2man
+    - name: Build Verilator v5.052
+      run: |
+        git clone https://github.com/verilator/verilator.git /tmp/verilator
+        cd /tmp/verilator
+        git checkout v5.052
+        autoconf
+        ./configure --prefix=/opt/verilator
+        make -j$(nproc)
+        make install DESTDIR="$RUNNER_TEMP/verilator-package"
+        tar -czf "$RUNNER_TEMP/verilator.tar.gz" -C "$RUNNER_TEMP/verilator-package" opt/verilator
+    - name: Upload Verilator installation
+      uses: actions/upload-artifact@v6
+      with:
+        name: verilator-v5.052
+        path: ${{ runner.temp }}/verilator.tar.gz
+        retention-days: 1
+
   test_common:
     runs-on: ubuntu-latest  # This specifies the runner environment
+    needs: build_verilator
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.15']
@@ -19,6 +45,19 @@ jobs:
     steps:
     - name: Check out repository
       uses: actions/checkout@v7
+    - name: Install GHDL
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ghdl-gcc
+    - name: Download Verilator
+      uses: actions/download-artifact@v6
+      with:
+        name: verilator-v5.052
+        path: ${{ runner.temp }}
+    - name: Install Verilator
+      run: |
+        sudo tar -xzf "$RUNNER_TEMP/verilator.tar.gz" -C /
+        echo "/opt/verilator/bin" >> "$GITHUB_PATH"
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
@@ -31,46 +70,16 @@ jobs:
         pipx ensurepath
         pipx install uv
         # Handle potential compatibility issues with newer Python versions
-        uv sync --extra dev
-    - name: Run tests
-      run: uv run pytest test/test_regdef.py test/test_argparse.py test/test_validate.py
-
-  test_rtl:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Check out repository
-      uses: actions/checkout@v7
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: '3.13'
-    - name: Install system dependencies (simulators)
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ghdl-gcc git make autoconf g++ flex bison libfl-dev help2man
-    - name: Build and install Verilator v5.032 from source
-      run: |
-        git clone https://github.com/verilator/verilator.git /tmp/verilator
-        cd /tmp/verilator
-        git checkout v5.032
-        autoconf
-        ./configure
-        make -j$(nproc)
-        sudo make install
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install --no-cache-dir pipx
-        pipx ensurepath
-        pipx install uv
         uv sync --extra dev --extra rtl
+    - name: Run Python tests
+      run: uv run pytest test/test_regdef.py test/test_argparse.py test/test_validate.py
     - name: Run cocotb RTL tests (Verilator + GHDL)
       run: COCOTB_IGNORE_PYTHON_REQUIRES=1 uv run pytest verification/test_rtl.py -v
     - name: Upload verification logs
       if: always()
       uses: actions/upload-artifact@v6
       with:
-        name: verification-logs
+        name: verification-logs-python-${{ matrix.python-version }}
         path: |
           sim_build/*/*.log
           sim_build/*/test_*.result.xml
